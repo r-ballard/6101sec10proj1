@@ -1,0 +1,71 @@
+---
+title: "preprocessing.rmd"
+author: "rballard"
+date: "2024-03-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+set.seed(20052)
+library(ezids)
+
+pkg_vector <- c("ggplot2",
+                "gridExtra",
+                "tidyverse")
+
+invisible(lapply(pkg_vector,loadPkg))
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r unzip}
+
+projwd <- "C:/Users/russe/Documents/github/6101sec10proj1/"
+datadir <- "data"
+zipf<- "icecream.zip"
+outf<-"icecream"
+
+zippath <- file.path(projwd, datadir, zipf, fsep="/")
+outpath <-file.path(projwd, datadir, outf, fsep="/") 
+  
+unzip(zipF,exdir=outDir)
+```
+
+```{r loaddfs}
+#TODO read brand datasets to compare to combined
+
+prodcombpath <- file.path(projwd, datadir, outf, "combined/products.csv")
+prodcombdf = data.frame(read.csv(prodcombpath,
+                            header=TRUE,
+                            sep=",",
+                            quote="\"",
+                            colClasses=c("brand"="factor",
+                                          "key"="character",
+                                          "name"="character",
+                                          "subhead"="character",
+                                          "description"="character",
+                                          "rating"="numeric",
+                                          "rating_count"="numeric",
+                                          "ingredients"="character")))
+
+
+head(prodcombdf)
+```
+First we inspect the dataset manually by opening the .csv in notepad in order to avoid any unfortunate autoformatting that may be caused by opening in Excel. In doing this we see that the first line contains the headers: `brand`,`key`,`name`,`subhead`,`description`,`rating`,`rating_count`,`ingredients`. According to the manifest the `key` field is a join field to the reviews dataset.
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
