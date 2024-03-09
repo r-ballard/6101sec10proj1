@@ -60,6 +60,25 @@ head(prodcombdf)
 First we inspect the dataset manually by opening the .csv in notepad in order to avoid any unfortunate autoformatting that may be caused by opening in Excel. In doing this we see that the first line contains the headers: `brand`,`key`,`name`,`subhead`,`description`,`rating`,`rating_count`,`ingredients`. According to the manifest the `key` field is a join field to the reviews dataset.
 
 
+
+```{r ingredientparse}
+
+#Derive list of ingredients by decomposing roughly comma delimited ingredient list field
+productingredients <- unique(unlist(strsplit(prodcombdf$ingredients, ",")))
+
+#The output is somewhat dirty, trim leading whitespace
+productingredients <- sapply(productingredients,trimws,USE.NAMES = FALSE)
+
+productingredients <- str_sort(productingredients)
+productingredients <- gsub('†',"",productingredients)
+
+productingredients<-unique(productingredients)
+
+productingredients
+```
+
+
+
 ## Including Plots
 
 You can also embed plots, for example:
