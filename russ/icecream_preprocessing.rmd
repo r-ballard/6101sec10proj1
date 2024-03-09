@@ -28,11 +28,12 @@ When you click the **Knit** button a document will be generated that includes bo
 
 projwd <- "C:/Users/russe/Documents/github/6101sec10proj1/"
 datadir <- "data"
+rawdir <- "raw"
 zipf<- "icecream.zip"
 outf<-"icecream"
 
-zippath <- file.path(projwd, datadir, zipf, fsep="/")
-outpath <-file.path(projwd, datadir, outf, fsep="/") 
+zippath <- file.path(projwd, datadir, raw, zipf, fsep="/")
+outpath <-file.path(projwd, datadir, raw, outf, fsep="/") 
   
 unzip(zipF,exdir=outDir)
 ```
@@ -74,7 +75,22 @@ productingredients <- gsub('†',"",productingredients)
 
 productingredients<-unique(productingredients)
 
-productingredients
+
+for (i in 1:length(productingredients)) {
+  print(productingredients[i])
+} 
+
+```
+
+```{r indicatormatrix}
+  ingredindicator <- prodcombdf %>% 
+  rownames_to_column(var="row") %>% 
+  separate_rows(ingredients, sep=",") %>% 
+  count(row, ingredients) %>% 
+  spread(ingredients, n, fill = 0)
+
+colnames(ingredindicator)
+
 ```
 
 
