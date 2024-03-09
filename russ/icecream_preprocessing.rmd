@@ -13,7 +13,8 @@ library(ezids)
 
 pkg_vector <- c("ggplot2",
                 "gridExtra",
-                "tidyverse")
+                "tidyverse",
+                "stringi")
 
 invisible(lapply(pkg_vector,loadPkg))
 ```
@@ -32,16 +33,16 @@ rawdir <- "raw"
 zipf<- "icecream.zip"
 outf<-"icecream"
 
-zippath <- file.path(projwd, datadir, raw, zipf, fsep="/")
-outpath <-file.path(projwd, datadir, raw, outf, fsep="/") 
+zippath <- file.path(projwd, datadir, rawdir, zipf, fsep="/")
+outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/") 
   
-unzip(zipF,exdir=outDir)
+unzip(zippath,exdir=outpath)
 ```
 
 ```{r loaddfs}
 #TODO read brand datasets to compare to combined
 
-prodcombpath <- file.path(projwd, datadir, outf, "combined/products.csv")
+prodcombpath <- file.path(outpath, "combined/products.csv")
 prodcombdf = data.frame(read.csv(prodcombpath,
                             header=TRUE,
                             sep=",",
@@ -54,6 +55,10 @@ prodcombdf = data.frame(read.csv(prodcombpath,
                                           "rating"="numeric",
                                           "rating_count"="numeric",
                                           "ingredients"="character")))
+
+processingpath <- file.path(projwd, datadir, "processing/ingredientrenamedict.csv" )
+
+ingredientprocessingdict = data.frame(read.csv(processingpath))
 
 
 head(prodcombdf)
@@ -75,12 +80,35 @@ productingredients <- gsub('†',"",productingredients)
 
 productingredients<-unique(productingredients)
 
+ingredientprocessingdict2 <-filter(ingredientprocessingdict, to_ingredient != "")
 
-for (i in 1:length(productingredients)) {
-  print(productingredients[i])
-} 
+prodcombdf$ingredients <- stri_replace_all_fixed(prodcombdf$ingredients,
+                                  pattern=ingredientprocessingdict2$from_ingredient,
+                                  replacement=ingredientprocessingdict2$to_ingredient,
+                                  vectorize=FALSE)
+
+# extract list of ingredients
+# for (i in 1:length(productingredients)) {
+#   print(productingredients[i])
+# } 
 
 ```
+
+```{r indicator regex}
+
+
+prodcombdf$HAS_VANILLA <- as.integer(grepl(pattern = "VANILLA", x = prodcombdf$ingredients))
+prodcombdf$HAS_ORGANIC <- as.integer(grepl(pattern = "ORGANIC", x = prodcombdf$ingredients))
+prodcombdf$HAS_CARAMEL <- as.integer(grepl(pattern = "CARAMEL", x = prodcombdf$ingredients))
+
+fruitvec <- c("RASPBERR","CHERR","BLUEBERR","BANANA")
+prodcombdf$HAS_FRUIT <- as.integer(grepl(pattern=paste(fruitvec,collapse="|"), x=prodcombdf$ingredients))
+
+chocvec <- c("CHOCOLAT","COCO")
+prodcombdf$HAS_CHOCOLATE <- as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=prodcombdf$ingredients))
+
+```
+
 
 ```{r indicatormatrix}
   ingredindicator <- prodcombdf %>% 
@@ -89,8 +117,12 @@ for (i in 1:length(productingredients)) {
   count(row, ingredients) %>% 
   spread(ingredients, n, fill = 0)
 
-colnames(ingredindicator)
 
+
+
+colnames(ingredindicator) <- sapply(colnames(ingredindicator),trimws,which="both",USE.NAMES = FALSE)
+colnames(ingredindicator)<-make.names(colnames(ingredindicator),unique = TRUE)
+colnames(ingredindicator)
 ```
 
 
