@@ -39,7 +39,7 @@ outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/")
 unzip(zippath,exdir=outpath)
 ```
 
-```{r loaddfs}
+```{r loadproductdf}
 #TODO read brand datasets to compare to combined
 
 prodcombpath <- file.path(outpath, "combined/products.csv")
@@ -65,6 +65,41 @@ head(prodcombdf)
 ```
 First we inspect the dataset manually by opening the .csv in notepad in order to avoid any unfortunate autoformatting that may be caused by opening in Excel. In doing this we see that the first line contains the headers: `brand`,`key`,`name`,`subhead`,`description`,`rating`,`rating_count`,`ingredients`. According to the manifest the `key` field is a join field to the reviews dataset.
 
+```{r loadreviewdf}
+#TODO read brand datasets to compare to combined
+
+reviewpath <- file.path(outpath, "combined/reviews.csv")
+#comma outside of quote line 7952
+reviewdf = data.frame(read.csv(reviewpath,
+                            header=TRUE,
+                            sep=",",
+                            quote="\"",
+                            na.strings=c("","NA"),
+                            colClasses=c("brand"="factor",
+                                          "key"="character",
+                                          "author"="character",
+                                          "date"="character",
+                                          "stars"="numeric",
+                                          "title"="character",
+                                          "helpful_yes"="numeric",
+                                          "helpful_no"="character",
+                                          "text"="character",
+                                          "taste"="numeric",
+                                          "ingredients"="numeric",
+                                          "texture"="character",
+                                          "likes"="character")))
+
+
+#Rename taste, ingredients, and texture columns in Ratings df. These are also integer 5 point ratings.
+reviewdf <- reviewdf %>% 
+  rename(
+     taste_rating = taste,
+     ingredients_rating = ingredients,
+     texture_rating = texture 
+    )
+
+head(reviewdf)
+```
 
 
 ```{r ingredientparse}
@@ -109,6 +144,22 @@ prodcombdf$HAS_CHOCOLATE <- as.integer(grepl(pattern=paste(chocvec,collapse="|")
 
 ```
 
+
+
+
+```{r joinproductreview}
+#join product indicators to reviews dataset
+productreview <- left_join(reviewdf,
+                           prodcombdf %>% select(key,
+                                                 HAS_CARAMEL,
+                                                 HAS_CHOCOLATE,
+                                                 HAS_FRUIT,
+                                                 HAS_VANILLA,
+                                                 HAS_ORGANIC),
+                           by="key", multiple="all")
+
+head(productreview)
+```
 
 ```{r indicatormatrix}
   ingredindicator <- prodcombdf %>% 
