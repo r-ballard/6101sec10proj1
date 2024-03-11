@@ -142,6 +142,9 @@ prodcombdf$HAS_FRUIT <- as.integer(grepl(pattern=paste(fruitvec,collapse="|"), x
 chocvec <- c("CHOCOLAT","COCO")
 prodcombdf$HAS_CHOCOLATE <- as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=prodcombdf$ingredients))
 
+prodcombdf$IS_BAR <- as.integer(grepl(pattern = "BAR", x = prodcombdf$name) | 
+                                grepl(pattern = "BAR",prodcombdf$subhead))
+
 ```
 
 
