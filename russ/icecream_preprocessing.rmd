@@ -143,7 +143,7 @@ chocvec <- c("CHOCOLAT","COCO")
 prodcombdf$HAS_CHOCOLATE <- as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=prodcombdf$ingredients))
 
 prodcombdf$IS_BAR <- as.integer(grepl(pattern = "BAR", x = prodcombdf$name) | 
-                                grepl(pattern = "BAR",prodcombdf$subhead))
+                                grepl(pattern = "BAR", x = prodcombdf$subhead))
 
 ```
 
@@ -158,7 +158,8 @@ productreview <- left_join(reviewdf,
                                                  HAS_CHOCOLATE,
                                                  HAS_FRUIT,
                                                  HAS_VANILLA,
-                                                 HAS_ORGANIC),
+                                                 HAS_ORGANIC,
+                                                 IS_BAR),
                            by="key", multiple="all")
 
 head(productreview)
