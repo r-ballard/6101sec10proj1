@@ -1,7 +1,0 @@
-"0","prodcombdf$IS_BAR <- as.integer(grepl(pattern = ""BAR"", x = prodcombdf$name) | 
-                                grepl(pattern = ""BAR"",prodcombdf$subhead)))
-"
-"2","Error: unexpected ')' in:
-""prodcombdf$IS_BAR <- as.integer(grepl(pattern = ""BAR"", x = prodcombdf$name) | 
-                                grepl(pattern = ""BAR"",prodcombdf$subhead)))""
-"

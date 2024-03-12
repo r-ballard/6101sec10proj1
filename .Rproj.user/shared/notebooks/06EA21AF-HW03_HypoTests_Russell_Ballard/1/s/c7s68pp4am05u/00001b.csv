@@ -1,9 +1,0 @@
-"0","pkg_vector <- c(""ggplot2"",
-                ""dplyr"",
-                ""gridExtra"",
-                ""chisq.posthoc.test""))
-"
-"2","Error: unexpected ')' in:
-""                ""gridExtra"",
-                ""chisq.posthoc.test""))""
-"

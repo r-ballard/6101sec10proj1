@@ -1,2 +1,0 @@
-"0","admitted <- Adata2 %>% filter(admit == '1')"
-"0","rejected <- Adata2 %>% filter(admit == '0')"
