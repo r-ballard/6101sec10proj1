@@ -1,0 +1,1 @@
+{"frames":[],"message":"Error: unexpected ')' in:\n\"prodcombdf$IS_BAR <- as.integer(grepl(pattern = \"BAR\", x = prodcombdf$name) | \n                                grepl(pattern = \"BAR\",prodcombdf$subhead)))\"\n"}

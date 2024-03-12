@@ -1,0 +1,193 @@
+---
+title: "preprocessing.rmd"
+author: "rballard"
+date: "2024-03-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+set.seed(20052)
+library(ezids)
+
+pkg_vector <- c("ggplot2",
+                "gridExtra",
+                "tidyverse",
+                "stringi")
+
+invisible(lapply(pkg_vector,loadPkg))
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r unzip}
+
+projwd <- "C:/Users/russe/Documents/github/6101sec10proj1/"
+datadir <- "data"
+rawdir <- "raw"
+zipf<- "icecream.zip"
+outf<-"icecream"
+
+zippath <- file.path(projwd, datadir, rawdir, zipf, fsep="/")
+outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/") 
+  
+unzip(zippath,exdir=outpath)
+```
+
+```{r loadproductdf}
+#TODO read brand datasets to compare to combined
+
+prodcombpath <- file.path(outpath, "combined/products.csv")
+prodcombdf = data.frame(read.csv(prodcombpath,
+                            header=TRUE,
+                            sep=",",
+                            quote="\"",
+                            colClasses=c("brand"="factor",
+                                          "key"="character",
+                                          "name"="character",
+                                          "subhead"="character",
+                                          "description"="character",
+                                          "rating"="numeric",
+                                          "rating_count"="numeric",
+                                          "ingredients"="character")))
+
+processingpath <- file.path(projwd, datadir, "processing/ingredientrenamedict.csv" )
+
+ingredientprocessingdict = data.frame(read.csv(processingpath))
+
+
+head(prodcombdf)
+```
+First we inspect the dataset manually by opening the .csv in notepad in order to avoid any unfortunate autoformatting that may be caused by opening in Excel. In doing this we see that the first line contains the headers: `brand`,`key`,`name`,`subhead`,`description`,`rating`,`rating_count`,`ingredients`. According to the manifest the `key` field is a join field to the reviews dataset.
+
+```{r loadreviewdf}
+#TODO read brand datasets to compare to combined
+
+reviewpath <- file.path(outpath, "combined/reviews.csv")
+#comma outside of quote line 7952
+reviewdf = data.frame(read.csv(reviewpath,
+                            header=TRUE,
+                            sep=",",
+                            quote="\"",
+                            na.strings=c("","NA"),
+                            colClasses=c("brand"="factor",
+                                          "key"="character",
+                                          "author"="character",
+                                          "date"="character",
+                                          "stars"="numeric",
+                                          "title"="character",
+                                          "helpful_yes"="numeric",
+                                          "helpful_no"="character",
+                                          "text"="character",
+                                          "taste"="numeric",
+                                          "ingredients"="numeric",
+                                          "texture"="character",
+                                          "likes"="character")))
+
+
+#Rename taste, ingredients, and texture columns in Ratings df. These are also integer 5 point ratings.
+reviewdf <- reviewdf %>% 
+  rename(
+     taste_rating = taste,
+     ingredients_rating = ingredients,
+     texture_rating = texture 
+    )
+
+head(reviewdf)
+```
+
+
+```{r ingredientparse}
+
+#Derive list of ingredients by decomposing roughly comma delimited ingredient list field
+productingredients <- unique(unlist(strsplit(prodcombdf$ingredients, ",")))
+
+#The output is somewhat dirty, trim leading whitespace
+productingredients <- sapply(productingredients,trimws,USE.NAMES = FALSE)
+
+productingredients <- str_sort(productingredients)
+productingredients <- gsub('†',"",productingredients)
+
+productingredients<-unique(productingredients)
+
+ingredientprocessingdict2 <-filter(ingredientprocessingdict, to_ingredient != "")
+
+prodcombdf$ingredients <- stri_replace_all_fixed(prodcombdf$ingredients,
+                                  pattern=ingredientprocessingdict2$from_ingredient,
+                                  replacement=ingredientprocessingdict2$to_ingredient,
+                                  vectorize=FALSE)
+
+# extract list of ingredients
+# for (i in 1:length(productingredients)) {
+#   print(productingredients[i])
+# } 
+
+```
+
+```{r indicator regex}
+
+
+prodcombdf$HAS_VANILLA <- as.integer(grepl(pattern = "VANILLA", x = prodcombdf$ingredients))
+prodcombdf$HAS_ORGANIC <- as.integer(grepl(pattern = "ORGANIC", x = prodcombdf$ingredients))
+prodcombdf$HAS_CARAMEL <- as.integer(grepl(pattern = "CARAMEL", x = prodcombdf$ingredients))
+
+fruitvec <- c("RASPBERR","CHERR","BLUEBERR","BANANA")
+prodcombdf$HAS_FRUIT <- as.integer(grepl(pattern=paste(fruitvec,collapse="|"), x=prodcombdf$ingredients))
+
+chocvec <- c("CHOCOLAT","COCO")
+prodcombdf$HAS_CHOCOLATE <- as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=prodcombdf$ingredients))
+
+prodcombdf$IS_BAR <- as.integer(grepl(pattern = "BAR", x = prodcombdf$name) | 
+                                grepl(pattern = "BAR", x = prodcombdf$subhead))
+
+```
+
+
+
+
+```{r joinproductreview}
+#join product indicators to reviews dataset
+productreview <- left_join(reviewdf,
+                           prodcombdf %>% select(key,
+                                                 HAS_CARAMEL,
+                                                 HAS_CHOCOLATE,
+                                                 HAS_FRUIT,
+                                                 HAS_VANILLA,
+                                                 HAS_ORGANIC,
+                                                 IS_BAR),
+                           by="key", multiple="all")
+
+head(productreview)
+```
+
+```{r indicatormatrix}
+  ingredindicator <- prodcombdf %>% 
+  rownames_to_column(var="row") %>% 
+  separate_rows(ingredients, sep=",") %>% 
+  count(row, ingredients) %>% 
+  spread(ingredients, n, fill = 0)
+
+
+
+
+colnames(ingredindicator) <- sapply(colnames(ingredindicator),trimws,which="both",USE.NAMES = FALSE)
+colnames(ingredindicator)<-make.names(colnames(ingredindicator),unique = TRUE)
+colnames(ingredindicator)
+```
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

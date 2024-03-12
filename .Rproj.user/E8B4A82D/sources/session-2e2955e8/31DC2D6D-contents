@@ -1,0 +1,18 @@
+library(ezids)
+
+#of form c("pkg",c("pkg","src")) defaults to CRAN, src explicit
+pkg_vector <- c("tidyverse",
+                "ggplot2",
+                "lubridate",
+                "rmarkdown",
+                "stringr",
+                "printr",
+                "faraway",
+                "modelr",
+                "corrplot")
+
+lapply(pkg_vector,loadPkg)
+
+x <- list( u = 2, v = "abc")
+
+x[1]

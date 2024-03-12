@@ -1,0 +1,296 @@
+---
+title: "R Assignment - Pizza EDA"
+author: "GWU Intro to Data Science DATS 6101"
+# date: "today"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r init, include=FALSE}
+# some of common options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+
+#Explicitly load ezids library for loadPkg function
+library(ezids)
+
+#Assign vector of required libraries
+pkg_vector <- c("ggplot2",
+                "dplyr",
+                "gtable",
+                "gridExtra",
+                "RColorBrewer")
+
+#use ezids.loadPkg with lapply to download all required packages in pkg_vector which are not yet downloaded, then load them. wrapped with invisible() to silence lapply NULL return output
+invisible(lapply(pkg_vector,loadPkg))
+
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+#change results = "hide" to "show" to show kable summary returns
+knitr::opts_chunk$set(warning = F, results = "show", message = F)
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+# ‘scipen’: integer. A penalty to be applied when deciding to print numeric values in fixed or exponential notation.  Positive values bias towards fixed and negative towards scientific notation: fixed notation will be preferred unless it is more than ‘scipen’ digits wider.
+# use scipen=999 to prevent scientific notation at all times
+```
+
+```{r}
+# 1. Answer each question using in words/paragraph. 
+# 2. DO NOT use comments inside code blocks (like here) to answer anything. Those are for notes between 
+# coders/yourself. They will be ignored, and not counted as answers. 
+# 3. Keep the line/option    knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+# You can temporarily turn this on/off and use other option while you are working on the homework if it helps. 
+# The submitted work should have this option selected instead.
+# 4. All charts/graphs/tables should have appropriate captions. 
+# 5. You may want to use the ezids::outlierKD2 function to handle outliers
+# 6. Your grade is also determined by the style. Even if you answers everything correctly, but the html does not look appealing, you will NOT get the full credits. Pay attention to the details that we mentioned in class and in previous sample RMD files. How to use #, ##, ###, ..., bold face, italics, inline codes, LaTeX, tables, ...,  {results = "asis"}, single space vs two spaces at the end of line, ... , use of colors in plots/ggplots, and so forth.
+```
+
+
+# HW Assignment - EDA
+
+This pizza ingredient dataset is from data.world (@sdhilip) The variables are:  
+
+Variable |  Definition  
+  :-:    |  :-- 
+brand	 | Pizza brand
+id | ID
+mois | Amount of water per 100 grams in the sample
+prot | Amount of protein per 100 grams in the sample
+fat | Amount of fat per 100 grams in the sample
+ash | Amount of ash per 100 grams in the sample
+sodium | Amount of sodium per 100 grams in the sample
+carb | Amount of carbohydrates per 100 grams in the sample
+cal | Amount of calories per 100 grams in the sample
+
+As with all your work in this class, knit the RMD file into HTML, zip it with the RMD, and submit the zip file on Blackboard. 
+
+Compose your answers using inline R code instead of using the code-block output as much as you can. Coder's comments inside code blocks are never graded. 
+
+## Pizza Ingredient dataset
+
+### Question 1  
+**Import the dataset into R.**   
+
+
+```{r}
+setwd("C:/Users/russe/Documents/github/6101SP2024/Assignments")
+pizza = data.frame(read.csv("Pizza.csv",
+                            header=TRUE,
+                            sep=",",
+                            colClasses=c("brand"="character",
+                                         "id"="character",
+                                         "mois"="numeric",
+                                         "prot"="numeric",
+                                         "fat"="numeric",
+                                         "ash"="numeric",
+                                         "sodium"="numeric",
+                                         "carb"="numeric",
+                                         "cal"="numeric")))
+
+#pizza = api_rfit("Pizza")
+xkabledplyhead(pizza, title="Header rows for pizza dataset",
+                      pos="center")
+```
+
+Above is `head` with default n=5 of the loaded pizza dataframe. `head` looks OK.
+
+Could use other diagnostics like `tail`, `str`, etc. to test validity/completeness/expected dataframe.
+
+***
+
+### Question 2  
+**How many data points are there?**  
+You can use the `length()` or `nrow()` function.  
+```{r}
+#nrow(pizza)
+#length(pizza)
+#summary(pizza)[1]
+nrow(pizza)
+```
+By calling nrow(pizza) with inline code as follows, we can show that there are there are **`r nrow(pizza)`** non-header rows in the `pizza` dataset. These rows appear to each represent one pizza, as identified by the field `id`. We could test to see that this id field is indeed a unique identifier to assist in our EDA.
+
+***
+
+### Question 3  
+**Look at the summary statistics of the dataset.**  
+Use the `xkablesummary()` function?  
+
+```{r}
+xkablesummary(pizza, title="Pizza Dataframe xkablesummary",
+                     pos="center")
+```
+
+Above is a xkablesummary summary table for the "pizza" data.frame which we are researching.
+
+***
+
+### Question 4 
+**Make Plots - 1**  
+For sodium and calorie, make histograms, boxplots (using `ggplot()`), and QQ-plots (just regular `qqnorm()` function). Make sure all plots have appropriate titles, x- and y- labels, units on the axes if applicable. It is also much nicer to add some color to your charts instead of plain old black and white. For chart titles, if no appropriate title you can think of, just use y vs x. Don’t get mixed up (somehow I find up to half of the presentations have the wrong ones). It is NEVER x vs y. **Always y vs x**.  
+``` {r}
+sodiumhist <- ggplot(pizza, aes(x = sodium)) +
+    geom_histogram(fill="yellow3") +
+    xlim(0,2) + ylim(0,50) +
+    labs(title="Distribution Of Pizzas \nBy Amount Sodium Per 100 Grams",
+       x="Sodium",
+       y="Count") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+sodiumbox <- ggplot(pizza, aes (y = sodium)) + 
+  geom_boxplot(fill="yellow3") +
+  xlim(-.5,.5) + ylim(0,2) +
+  labs(title="Distribution of Sodium Per 100 Grams \nIn Pizzas",
+       y="Sodium Amount",
+       x="Pizza Sodium Distribution") +
+    theme(axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          plot.title = element_text(hjust = 0.5))
+
+grid.arrange(sodiumhist, sodiumbox, nrow=1)
+qqnorm(pizza$sodium, main="Q-Q plot of Sodium Per 100 gram Pizza")
+qqline(pizza$sodium)
+```
+
+Above are the histogram, boxplot, and Q-Q plot for the sodium variable of the pizza dataset.
+
+**Some Findings**
+
+1. With these charts we can observe some bimodality in the distribution of sodium per 100 grams in the pizzas.
+2. There appears to be clusters around the median sodium value, of .5 grams of sodium per 100 grams pizza, and a second higher grouping between 1.5 and 2 grams of sodium per 100 grams of pizza.
+3. This bimodality indicates a non-normal distribution for sodium per 100 grams of pizza in the pizza dataset as shown in the Q-Q plot, which has a discontinuity/jump and does not appear linear.
+4. These higher sodium pizzas are shown as outliers in the box and whisker plot.
+
+``` {r}
+caloriehist <- ggplot(pizza, aes(x = cal)) + 
+    geom_histogram(fill="red3") +
+    xlim(2,6) + ylim(0,50) +
+    labs(title="Distribution Of Pizzas \nBy Amount Calories Per 100 Grams",
+       x="Calories Per 100 Grams",
+       y="Count of Pizza ids") +
+    theme(plot.title = element_text(hjust = 0.5))
+
+caloriebox <- ggplot(pizza, aes (y = cal)) + 
+  geom_boxplot(fill="red3") +
+  xlim(-.5,.5) + ylim(0,6) +
+  labs(title="Distribution of Calories Per 100 Grams In Pizzas",
+       y="Calories Per Pizza Per 100 Grams",
+       x="Pizza Calorie Distribution") +
+    theme(axis.text.x=element_blank(),
+          axis.ticks.x=element_blank())
+
+grid.arrange(caloriehist, caloriebox, nrow=1)
+qqnorm(pizza$cal)
+qqline(pizza$cal)
+```
+
+Above are the histogram, boxplot, and Q-Q plot for the Calories variable of the pizza dataset.
+
+**Some Findings**
+
+1. With these charts we can observe some bimodality in the distribution of calories per 100 grams in the pizzas as with the sodium variable.
+2. There is a local median of slightly more than 3 for calories per 100 grams of pizza.
+3. Again as with the sodium variable, this bimodality indicates a non-normal distribution for calories per 100 grams of pizza in the pizza dataset as shown in the Q-Q plot, which has a discontinuity/jump and does not appear linear.
+4. These higher calorie pizzas are shown as outliers in the box and whisker plot.
+
+***
+
+### Question 5 
+**Make Plots - 2**  
+Making a scatterplot (using `ggplot()`), between sodium and calorie, color by the brand. As always, give the plot appropriate title, axis labels, and make it look good. 
+
+``` {r}
+ggplot(pizza, aes(x = sodium, y = cal)) +
+        geom_point(aes(color=brand)) +
+        labs(title="Calories vs Sodium By Brand",
+             y="Calories",
+             x="Sodium") +
+        theme(plot.title = element_text(hjust = 0.5)) +
+        guides(color = guide_legend(title = "Brand Identifier")) 
+```
+
+**Some Findings**
+
+1. Brand A appears to have pizzas with higher ratios of sodium and calories per 100gs pizza. This may be as a result of a manufacturing process, ingredient, or other factor in Brand A preparation. Perhaps meat-lovers or something like that?
+2. Anecdotally Brand C appears to have higher dispersion than the other brands, though B also appears to have some leftward scatter in their sodium ratio. Again this may be as a result of some underlying process.
+3. We can see that there appears to be some limit as the pizzas approach .5 Sodium per 100g pizza, perhaps these are "low sodium" otions, otherwise the pizzas appear to have a positive exponential or linear relationship between calories and sodium generally, with brands clustering along those lines.
+
+### Question 6 
+**Make Plots - 3**  
+Making another scatterplot (using `ggplot()`), between sodium and calorie, color by protein. What major difference do you see between this and the previous scatterplot?  
+
+``` {r}
+ggplot(pizza, aes(x = sodium, y = cal, col=prot)) +
+        geom_point() +
+        labs(title="Calories vs Sodium By Protein Amount",
+             y="Calories",
+             x="Sodium",
+             colour="Protein") +
+        theme(plot.title = element_text(hjust = 0.5)) +
+        geom_tile() +
+        scale_color_continuous(trans = 'reverse')
+```
+
+**Major Differences From Prior Plot**
+
+This scatterplot more clearly shows a positive correlation between Sodium and Calories in Pizzas with higher protein, and a clustering of lower protein pizzas having sodium of < .5, this is merely speculation but perhaps this is related to a "Low Sodium" designation in these pizzas or a choice of toppings.
+
+***
+
+### Question 7 
+**Make Plots - 4**  
+This time, make a plot with sodium as y, and brand as x. (What kind of plot would you choose?)  
+
+``` {r}
+#Multiple boxplot with alphabetized factors
+ggplot(pizza, aes(x = brand, y = sodium)) +
+  geom_boxplot(aes(fill=brand)) +
+        labs(title="Distributions Of Sodium Amounts In Pizzas by Brand",
+             y="Sodium",
+             x="Brand") +
+        theme(plot.title = element_text(hjust = 0.5)) + 
+        guides(fill="none")
+```
+
+To depict distribution of Sodium by Brand a multiple boxplot can be useful in comparing continuous distributions between the Brand factor variables. In this first multiple boxplot, I have ordered the brands alphabetically.
+
+```{r}
+#Create table of medians by brand as intermediary step
+medians <- tapply(pizza$sodium, pizza$brand, median)
+
+#Apply medians as factor sort for scale
+ggplot(pizza, aes(x = brand, y = sodium)) +
+  geom_boxplot(aes(fill=brand)) +
+        labs(title="Distributions Of Sodium Amounts In Pizzas by Brand",
+             y="Sodium",
+             x="Brand") +
+        theme(plot.title = element_text(hjust = 0.5)) + 
+        guides(fill="none") + 
+        scale_x_discrete(limits=c(names(sort(medians, decreasing = TRUE))))
+```
+
+In this second multiple boxplot, I have ordered the brands instead by median Sodium amount. Sometimes ordering summary statistics like this can be aesthetically pleasing or otherwise highlight features in the data.
+
+We could use alternative color scales if we would like as well using a color brewer, though in this case I think rainbow based on brand alphabet is sufficient.
+
+***
+
+### Question 8 
+**Outliers**  
+Use the `ezids::outlierKD2()` function to remove the outliers for sodium, then run the function again to remove outliers on calories. Re-do the QQ-plots for these two variables. Do you see much improvements?  
+
+``` {r}
+pizza_outlierclean <- ezids::outlierKD2(pizza, sodium,
+                                        rm=TRUE,
+                                        boxplt=TRUE,
+                                        qqplt=TRUE)
+```
+
+Removing the outliers from the Sodium Q-Q and other exploratory plots does indeed appear to enhance the normality of the distribution, or atleast mitigate the discontinuity in the plot, and additionally it reduces the appearance of bimodality, though there still appears to be rightward skew. Given that the high sodium pizzas are all of a single brand this may be appropriate preprocessing depending on the nature of the study.
