@@ -36,7 +36,11 @@ options(scientific=T, digits = 3)
 # use scipen=999 to prevent scientific notation at all times
 ```
 
-```{r import_data}
+# The Ice Cream Dataset
+
+Our project uses an Ice Cream dataset that was retrieved from Kaggle from the following website: "https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data". The dataset contains a product and review datasets for 4 brands of ice cream, Ben & Jerry's, Häagen-Dazs, Talenti, and Breyers. For the purposes of this project, we will be using a combined dataset provided by the author that combines all the products and reviews of all brands into their respective csv file.
+
+```{r import_data, echo=FALSE}
 getwd()
 products <- data.frame(read.csv("products.csv", header = TRUE))
 str(products)
@@ -47,15 +51,59 @@ str(reviews)
 head(reviews)
 ```
 
-```{r results='markup'}
-colnames(products)[1:8]=c("Brand", "Product ID", "Product Name", "Subhead","Product Description", "Rating", "Rating Count", "Ingredients")
-xkabledplyhead(products, title = "Product header rows")
-
-colnames(reviews)[1:13]=c("Brand", "Product ID", "Username", "Date", "Stars", "Title", "Helpful", "Not Helpful", "Review", "Taste", "Ingredients", "Texture", "Likes")
-xkabledplyhead(reviews, title = "Review header rows")
+```{r}
+nrow_products <- nrow(products)
+nrow_reviews <- nrow(reviews)
 ```
 
+The combined product dataset contains `r nrow_products` data points, and the combined reviews dataset contains `r nrow_reviews` data points.
+
+For the `products.csv` file, the variables in the dataset are:
+
+* `brand`: brand keyword that categorizes each product to its respective brand
+* `key`: the primary key that contains a numerical value and the brand keyword
+* `name`: the product name
+* `subhead`: simple description of the product (used for Ben & Jerry's products only)
+* `description`: detailed description of the product
+* `rating`: a star rating scale with a range of 1.0 to 5.0
+* `rating_count`: amount of ratings for the product
+* `ingredients`: ingredient list of the product
+
+For the `reviews.csv` file, the variables in the dataset are:
+
+* `brand`: brand keyword that categorizes each product to its respective brand
+* `key`: foreign key that matches to key in `products.csv`
+* `author`: the username of the reviewer
+* `date`: date that review was posted
+* `stars`: reviewer rating of the product
+* `title`: reviewer-created title of their review
+* `helpful_yes`: amount of users that found the review helpful
+* `helpful_no`: amount of users that found the review not helpful
+* `text`: the text-based review
+* `taste`: reviewer rating of product taste in a range of 1.0 to 5.0  (For Häagen-Dazs products only)
+* `ingredients`: reviewer rating of product ingredients in a range of 1.0 to 5.0 (For Häagen-Dazs products only)
+* `texture`: reviewer rating of product texture in a range of 1.0 to 5.0 (For Häagen-Dazs products only)
+* `likes`: reviewer likes from a preset list to choose from (For Häagen-Dazs products only)
+
+Regarding the dataset, there are important considerations that the author provides for users. First, "the collection of reviews on the brand websites may not be representative of overall opinion, i.e. there may be review censoring or presence of fake reviews meant to help/harm the image of the brand" (Pond, 2020). In order to combat this, the author, "intentionally chose brands that host some negative reviews on their website" (Pond, 2020). Next, the author acknowledges the parent companies of each of the brands. "Ben & Jerry's, Breyers, and Talenti are all owned by Uniever. Häagen-Dazs is owned by Froneri" (Pond, 2020). It is also important to note that, "Talenti is distinguished from the other brands as they produce gelato" (Pond, 2020).
+
+```{r echo=FALSE}
+colnames(products)[1:8]=c("Brand", "ProductID", "ProductName", "Subhead","ProductDescription", "Rating", "RatingCount", "Ingredients")
+# xkabledplyhead(products, title = "Product header rows")
+
+colnames(reviews)[1:13]=c("Brand", "ProductID", "Username", "Date", "Stars", "Title", "Helpful", "Not Helpful", "Review", "Taste", "Ingredients", "Texture", "Likes")
+# xkabledplyhead(reviews, title = "Review header rows")
+```
+
+```{r results='markup'}
+xkablesummary(products, title = "Summary of the products dataset")
+xkablesummary(reviews, title = "Summary of the reviews dataset")
+```
+
+
 # Exploratory Data Analysis
+
+We will explore the Ice Cream dataset by creating graphs, performing tests, and finding the measures of central tendency and variation. First, we'll look at the overall dataset, and then the individual datasets of each of the four brands.
 
 ```{r}
 library(ggplot2)
@@ -65,77 +113,413 @@ ggplot(data=products, aes(Rating)) +
     labs(title="Ice Cream Product Rating Histogram using `ggplot`")
 ```
 
-This histogram shows the overall ratings of all ice-cream products across all 4 brands of ice-cream. We can see that there is a high frequency of ratings within the 4 - 5 star range.
+This histogram shows the overall ratings of all ice-cream products across all 4 brands of ice-cream. We can see that there is a high frequency of ratings within the 4 - 5 star range. Based on the histogram above, we can see a left skewed distribution. To further test the skewness, we will perform a QQ plot.
+
+```{r}
+sd.ratings <- sd(products$Rating)
+mean.ratings <- mean(products$Rating)
+sd.ratings
+mean.ratings
+```
+
+The mean of the data above is `r mean.ratings` and the standard deviation is `r sd.ratings`
+
+```{r}
+qqnorm(products$Rating, main="QQ plot of Product Ratings")
+qqline(products$Rating)
+```
+
+Based on the Q-Q plot above, we see that the graph is displaying a left skew as most of the data points are within the third to fifth sample quantile. Therefore this graph displays that the dataset does not present a normal distribution. To further test for normality, the Shapiro-Wilk test is conducted below.
 
 ```{r results='markup'}
-mean.ratings <- mean(products$Rating)
-mean.ratings
+shapiro.test(products$Rating)
+# ks.test(products$Rating, pnorm)
+```
+
+For the Shapiro-Wilk test, we are given the following hypotheses:
+
+* `Null Hypothesis`: The sample comes from a normally distributed population
+* `Alternative Hypothesis`: The sample does not come from a normally distributed population
+
+Based on the results of the test, the p-value is less than the significance level of 0.05, which means that we reject the null hypothesis and conclude that the data from the sample does not come from a normally distributed population.
+
+#### Measures of Central Tendency
+
+With the combined dataset, we will calculate the mean, median, and mode for this dataset.
+
+```{r echo=FALSE}
+mean.rating <- mean(products$Rating)
+median.rating <- median(products$Rating)
+mode.rating <- names(table(products$Rating))[table(products$Rating) == max(table(products$Rating))]
+```
+
+* `Mean`: `r mean.rating`
+* `Median`: `r median.rating`
+* `Mode`: `r mode.rating`
+
+#### Measures of Variation
+
+With the combined dataset, we will calculate the range, mean deviation, standard deviation, and variance.
+
+```{r echo=FALSE}
+range.rating <- range(products$Rating)
+md.rating <- mean(abs(products$Rating - mean.rating))
+sd.rating <- sd(products$Rating)
+variance.rating <- var(products$Rating)
+```
+
+* `Range`: `r range.rating`
+* `Mean Deviation`: `r md.rating`
+* `Standard Deviation`: `r sd.rating`
+* `Variance`: `r variance.rating`
+
+```{r results='markup'}
+z4rating <- (4 - mean.ratings)/sd.ratings
+z4rating
+```
+
+```{r results='markup'}
+pnorm(z4rating)
+```
+
+```{r, echo=TRUE}
+products$zRating = scale(products$Rating)
+```
+
+```{r results='markup'}
+mean(products$zRating, na.rm = TRUE)
+sd(products$zRating, na.rm = TRUE)
+
+summary(products$zRating)
+```
+
+```{r, message=FALSE, warning=FALSE, results='markup'}
+loadPkg("Hmisc")
+describe(products$Rating)
 ```
 
 ### Ben & Jerry's
 
+Ben & Jerry's mission for their products is to "make, distribute, and sell the finest-quality ice cream and euphoric concoctions with a continued commitment to incorporating wholesome, natural ingredients and promoting business practices that respect the Earth and the Environment" ("Our Values, Activism, and Mission", n.d.)
+
 ```{r}
 bj_data <- subset(products, Brand == "bj")
 
-library(ggplot2)
 ggplot(bj_data, aes(Rating)) +
   geom_histogram(col='yellow', fill='black', alpha=0.7) +
   labs(x="Rating", y="Frequency") +
   labs(title="Ben & Jerry's Product Rating Histogram using `ggplot`")
 ```
 
-```{r results='markup'}
+```{r}
 mean.bjratings <- mean(bj_data$Rating)
-mean.bjratings
+sd.bjratings <- sd(bj_data$Rating)
 ```
 
+The mean of the data above is `r mean.bjratings` and the standard deviation is `r sd.bjratings`
+
+```{r}
+ggplot(bj_data, aes(x=ProductID, y=Rating)) +
+  geom_point(col='black', fill='yellow', alpha=0.7) +
+  labs(x="ProductID", y='Rating') +
+  labs(title="Ratings for each individual Ben & Jerry's products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+```
+
+```{r}
+# Finding the highest rated products
+max_rating_index <- which(bj_data$Rating == max(bj_data$Rating))
+max_productname <- bj_data$ProductName[max_rating_index]
+
+# Finding the lowest rated products
+min_rating_index <- which(bj_data$Rating == min(bj_data$Rating))
+min_productname <- bj_data$ProductName[min_rating_index]
+```
+
+Based from the graph, the highest rated Ben & Jerry's products: `r max_productname`
+
+Based from the graph, the lowest rated Ben & Jerry's products: `r min_productname`
+
+
+#### Measures of Central Tendency
+
+With the Ben & Jerry's data subset, we will calculate the mean, median, and mode for this dataset.
+
+```{r echo=FALSE}
+mean.bjrating <- mean(bj_data$Rating)
+median.bjrating <- median(bj_data$Rating)
+mode.bjrating <- names(table(bj_data$Rating))[table(bj_data$Rating) == max(table(bj_data$Rating))]
+```
+
+* `Mean`: `r mean.bjrating`
+* `Median`: `r median.bjrating`
+* `Mode`: `r mode.bjrating`
+
+#### Measures of Variation
+
+With the Ben & Jerry's data subset, we will calculate the range, mean deviation, standard deviation, and variance.
+
+```{r echo=FALSE}
+range.bjrating <- range(bj_data$Rating)
+md.bjrating <- mean(abs(bj_data$Rating - mean.bjrating))
+sd.bjrating <- sd(bj_data$Rating)
+variance.bjrating <- var(bj_data$Rating)
+```
+
+* `Range`: `r range.bjrating`
+* `Mean Deviation`: `r md.bjrating`
+* `Standard Deviation`: `r sd.bjrating`
+* `Variance`: `r variance.bjrating`
+
+
 ### Häagen-Dazs
+
+Since 1960, Häagen Dazs kept their mission simple, "source the finest ingredients and transform them into the most luxurious ice cream. Because [they] believe that luxury is found wherever you are - in moments large and small" ("About Us", n.d.).
 
 ```{r}
 hd_data <- subset(products, Brand == "hd")
 
-library(ggplot2)
 ggplot(hd_data, aes(Rating)) +
   geom_histogram(col='brown', fill='tan', alpha=0.7) +
   labs(x="Rating", y="Frequency") +
   labs(title="Häagen-Dazs' Product Rating Histogram using `ggplot`")
 ```
 
-```{r results='markup'}
+```{r}
 mean.hdratings <- mean(hd_data$Rating)
-mean.hdratings
+sd.hdratings <- sd(hd_data$Rating)
 ```
 
+The mean of the data above is `r mean.hdratings` and the standard deviation is `r sd.hdratings`
+
+```{r}
+ggplot(hd_data, aes(x=ProductID, y=Rating)) +
+  geom_point(col='brown', fill='tan', alpha=0.7) +
+  labs(x="ProductID", y='Rating') +
+  labs(title="Ratings for each individual Häagen-Dazs products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+```
+
+```{r}
+# Finding the highest rated products
+max_rating_index <- which(hd_data$Rating == max(hd_data$Rating))
+max_productname <- hd_data$ProductName[max_rating_index]
+
+# Finding the lowest rated products
+min_rating_index <- which(hd_data$Rating == min(hd_data$Rating))
+min_productname <- hd_data$ProductName[min_rating_index]
+```
+
+Based from the graph, the highest rated Häagen-Dazs products: `r max_productname`
+
+Based from the graph, the lowest rated Häagen-Dazs product: `r min_productname`
+
+
+#### Measures of Central Tendency
+
+With the Häagen Dazs data subset, we will calculate the mean, median, and mode for this dataset.
+
+```{r echo=FALSE}
+mean.hdrating <- mean(hd_data$Rating)
+median.hdrating <- median(hd_data$Rating)
+mode.hdrating <- names(table(hd_data$Rating))[table(hd_data$Rating) == max(table(hd_data$Rating))]
+```
+
+* `Mean`: `r mean.hdrating`
+* `Median`: `r median.hdrating`
+* `Mode`: `r mode.hdrating`
+
+#### Measures of Variation
+
+With the Häagen Dazs data subset, we will calculate the range, mean deviation, standard deviation, and variance.
+
+```{r echo=FALSE}
+range.hdrating <- range(hd_data$Rating)
+md.hdrating <- mean(abs(hd_data$Rating - mean.hdrating))
+sd.hdrating <- sd(hd_data$Rating)
+variance.hdrating <- var(hd_data$Rating)
+```
+
+* `Range`: `r range.hdrating`
+* `Mean Deviation`: `r md.hdrating`
+* `Standard Deviation`: `r sd.hdrating`
+* `Variance`: `r variance.hdrating`
+
+
 ### Talenti
+
+Talenti strives to "travel the world over to source the highest quality ingredients. Whether it's fragrant vanilla beans from Madagascar, or creamy mangos from Maharashta, [they] always start with real ingredients for the most authentic flavors" ("Our Process", n.d.).
 
 ```{r}
 talenti_data <- subset(products, Brand == "talenti")
 
-library(ggplot2)
 ggplot(talenti_data, aes(Rating)) +
   geom_histogram(col='brown', fill='white', alpha=0.7) +
   labs(x="Rating", y="Frequency") +
   labs(title="Talenti's Product Rating Histogram using `ggplot`")
 ```
 
-```{r results='markup'}
+```{r}
 mean.talratings <- mean(talenti_data$Rating)
-mean.talratings
+sd.talratings <- sd(talenti_data$Rating)
 ```
+
+The mean of the data above is `r mean.talratings` and the standard deviation is `r sd.talratings`
+
+```{r}
+ggplot(talenti_data, aes(x=ProductID, y=Rating)) +
+  geom_point(col='brown', fill='white', alpha=0.7) +
+  labs(x="ProductID", y='Rating') +
+  labs(title="Ratings for each individual Talenti products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+```
+
+```{r}
+# Finding the highest rated products
+max_rating_index <- which(talenti_data$Rating == max(talenti_data$Rating))
+max_productname <- talenti_data$ProductName[max_rating_index]
+
+# Finding the lowest rated products
+min_rating_index <- which(talenti_data$Rating == min(talenti_data$Rating))
+min_productname <- talenti_data$ProductName[min_rating_index]
+```
+
+Based from the graph, the highest rated Talenti products: `r max_productname`
+
+Based from the graph, the lowest rated Talenti product: `r min_productname`
+
+
+#### Measures of Central Tendency
+
+With the Talenti data subset, we will calculate the mean, median, and mode for this dataset.
+
+```{r echo=FALSE}
+mean.talrating <- mean(talenti_data$Rating)
+median.talrating <- median(talenti_data$Rating)
+mode.talrating <- names(table(talenti_data$Rating))[table(talenti_data$Rating) == max(table(talenti_data$Rating))]
+```
+
+* `Mean`: `r mean.talrating`
+* `Median`: `r median.talrating`
+* `Mode`: `r mode.talrating`
+
+#### Measures of Variation
+
+With the Talenti data subset, we will calculate the range, mean deviation, standard deviation, and variance.
+
+```{r echo=FALSE}
+range.talrating <- range(talenti_data$Rating)
+md.talrating <- mean(abs(talenti_data$Rating - mean.talrating))
+sd.talrating <- sd(talenti_data$Rating)
+variance.talrating <- var(talenti_data$Rating)
+```
+
+* `Range`: `r range.talrating`
+* `Mean Deviation`: `r md.talrating`
+* `Standard Deviation`: `r sd.talrating`
+* `Variance`: `r variance.talrating`
+
 
 ### Breyers
 
+Breyers is committed on using high quality ingredients. Breyers "start with high ingredients like colors and flavors from natural sources and sustainably farmed vanilla. [They] partner with American farmers for 100% Grade A milk and cream that comes from cows not treated with artificial growth hormones" ("About Breyers History", n.d.).
+ 
 ```{r}
 breyers_data <- subset(products, Brand == "breyers")
 
-library(ggplot2)
 ggplot(breyers_data, aes(Rating)) +
   geom_histogram(col='white', fill='green', alpha=0.7) +
   labs(x="Rating", y="Frequency") +
   labs(title="Breyers' Product Rating Histogram using `ggplot`")
 ```
 
-```{r results='markup'}
+```{r}
 mean.breyratings <- mean(breyers_data$Rating)
-mean.breyratings
+sd.breyratings <- sd(breyers_data$Rating)
 ```
+
+The mean of the data above is `r mean.breyratings` and the standard deviation is `r sd.breyratings`
+
+```{r}
+ggplot(breyers_data, aes(x=ProductID, y=Rating)) +
+  geom_point(col='green', fill='white', alpha=0.7) +
+  labs(x="ProductID", y='Rating') +
+  labs(title="Ratings for each individual Breyers products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+```
+
+```{r}
+# Finding the highest rated products
+max_rating_index <- which(breyers_data$Rating == max(breyers_data$Rating))
+max_productname <- breyers_data$ProductName[max_rating_index]
+
+# Finding the lowest rated products
+min_rating_index <- which(breyers_data$Rating == min(hd_data$Rating))
+min_productname <- breyers_data$ProductName[min_rating_index]
+```
+
+Based from the graph, the highest rated Breyers product: `r max_productname`
+
+Based from the graph, the lowest rated Breyers product: `r min_productname`
+
+
+#### Measures of Central Tendency
+
+With the Breyers data subset, we will calculate the mean, median, and mode for this dataset.
+
+```{r echo=FALSE}
+mean.breyrating <- mean(breyers_data$Rating)
+median.breyrating <- median(breyers_data$Rating)
+mode.breyrating <- names(table(breyers_data$Rating))[table(breyers_data$Rating) == max(table(breyers_data$Rating))]
+```
+
+* `Mean`: `r mean.breyrating`
+* `Median`: `r median.breyrating`
+* `Mode`: `r mode.breyrating`
+
+#### Measures of Variation
+
+With the Breyers data subset, we will calculate the range, mean deviation, standard deviation, and variance.
+
+```{r echo=FALSE}
+range.breyrating <- range(breyers_data$Rating)
+md.breyrating <- mean(abs(breyers_data$Rating - mean.breyrating))
+sd.breyrating <- sd(breyers_data$Rating)
+variance.breyrating <- var(breyers_data$Rating)
+```
+
+* `Range`: `r range.breyrating`
+* `Mean Deviation`: `r md.breyrating`
+* `Standard Deviation`: `r sd.breyrating`
+* `Variance`: `r variance.breyrating`
+
+
+## EDA Conclusion
+
+Based on the results of the EDA testing, we can conclude for each of the following for each brand.
+
+* `Ben & Jerry's`: The average of the dataset is `r mean.bjratings`, with a standard deviation of `r sd.bjratings` above and below the mean. There are two products that received the highest rating: Chocolate Peanut Butter Split and Ice Cream Sammie, and one product that received the lowest ranking, Chocolate Chip Cookie Dough Core.
+* `Häagen-Dazs`: The average of the dataset is `r mean.hdratings`, with a standard deviation of `r sd.hdratings`. There are five products that received the highest ranking, Chocolate Fudge Non-Dairy Bar, Honey Salted Caramel Almond Ice Cream, Peppermint Bark Ice Cream, Peppermint Bark Ice Cream Bar, and Vanilla Caramel White Chocolate Trio Crispy Layers, and one product that received the lowest ranking, Vanilla Milk Chocolate Almond Ice Cream Bar.
+* `Talenti`: The average of the dataset is `r mean.talratings`, with a standard deviation of `r sd.talratings` above and below the mean. There are four products that received the highest ranking: Belgian Chocolate Gelato, Caramel Apple Pie Gelato, Coconut Almond Chocolate Gelato, and Organic Oak-Aged Vanilla Gelato; and there is one product that received the lowest ranking: Chocolate Chip Cookie Dough Gelato.
+* `Breyers`: The average of the dataset is `r mean.breyratings`, with a standard deviation of `r sd.breyratings` above and below the mean. There is one product that has received the highest ranking: Oreo Snack Cups 10ct; and one product has received the lowest rating: Layered Dessert S'mores.
+
+From the information above we can determine the following
+
+* The flavor Chocolate Chip Cookie Dough has appeared twice for being the least rated flavor across all brands
+* Talenti has the highest average rating compared to the other brands, whereas Breyers has the lowest average rating across all brands.
+
+
+# Hypothesis Testing
+
+
+# References
+
+About Breyers History. (N.d.). Breyers. Retrieved March 12, 2024, from https://www.breyers.com/us/en/about.html
+
+About Us. (N.d.). Häagen Dazs. Retrieved March 12, 2024, from https://www.icecream.com/us/en/brands/haagen-dazs/about
+
+Our Process. (N.d.). Talenti. Retrieved March 12, 2024, from https://www.talentigelato.com/us/en/our-process.html
+
+Our Values, Activism, and Mission. (N.d.). Ben & Jerry's. Retrieved March 12, 2024, from https://www.benjerry.com/values
+
+Pond, T. (2020, Sept). Ice Cream Dataset. Kaggle. Retrieved March 11, 2024, from https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data
