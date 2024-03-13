@@ -14,7 +14,9 @@ library(ezids)
 pkg_vector <- c("ggplot2",
                 "gridExtra",
                 "tidyverse",
-                "stringi")
+                "stringi",
+                "plotly",
+                "gridExtra")
 
 invisible(lapply(pkg_vector,loadPkg))
 ```
@@ -27,7 +29,7 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ```{r unzip}
 
-projwd <- "C:/Users/russe/Documents/github/6101sec10proj1/"
+projwd <- "C:/Users/russe/Documents/github/6101sec10proj1"
 datadir <- "data"
 rawdir <- "raw"
 zipf<- "icecream.zip"
@@ -163,6 +165,89 @@ productreview <- left_join(reviewdf,
                            by="key", multiple="all")
 
 head(productreview)
+```
+
+```{r brandratinghist}
+#https://stackoverflow.com/questions/62558271/r-plotly-histogram-hover-text
+#bucket breaks
+bin_limits <- c(0,seq(0.5, 5.0, by = 1.0),5.0)
+
+bin_ctr <- (bin_limits[-1] + bin_limits[-length(bin_limits)])/2
+bin_wdt <- (bin_limits[-1] - bin_limits[-length(bin_limits)])
+
+ggplot(bin_prop, aes(x=bin_ctr, y=props, width=bin_wdt)) + 
+  geom_bar(stat="identity", position="identity", 
+           fill = "dodgerblue4", color = "white")
+
+
+ggplot(productreview, aes(stars, fill = brand)) +
+  stat_bin(breaks = bin_limits, closed = "left") +
+  stat_bin(breaks = bin_limits, closed = "left", geom = "text", mapping = aes(stars, label = ..count..), inherit.aes = FALSE, vjust = -.5) +
+  theme_light()
+
+ggplotly()
+
+# 
+# plot_histogram <- function(df, feature, plotTitle = "") {
+#   plt <- ggplot(df, aes(x=eval(parse(text=feature)))) +
+#     geom_histogram(aes(y = after_stat(density)), alpha=0.7, fill="#33AADE", color="black") +
+#     geom_density(alpha=0.3, fill="red") +
+#     geom_vline(aes(xintercept=mean(eval(parse(text=feature)), na.rm = T)), color="black", linetype="dashed", size=1) +
+#     labs(title = plotTitle, x=feature, y = "Density") 
+#   print(plt)
+# }
+# 
+#   #plt <- ggplot(df, aes(x=eval(parse(text=feature)), fill=eval(parse(text=label_column)))) +
+# plot_multi_histogram <- function(df, feature, label_column, plotTitle = "") {
+#   plt <- ggplot(df, aes(x=bin_ctr , width=bin_wdt, fill=eval(parse(text=label_column)))) +    
+#     geom_histogram(alpha=0.7, position="identity", aes(y = after_stat(density)), color="black") +
+#     geom_density(alpha=0.7) +
+#     geom_vline(aes(xintercept=mean(eval(parse(text=feature)), na.rm = T)), color="black", linetype="dashed", size=1) +
+#     labs(title = plotTitle, x=feature, y = "Density")
+#   plt + guides(fill=guide_legend(title=label_column))
+# }
+# 
+# 
+# 
+# # a simple histogram
+# plot_histogram(penguins, "body_mass_g")
+# 
+# 
+# # a overlaid histograms
+# plot_multi_histogram(productreview, "stars", "brand")
+
+```
+
+
+```{r ratingbarchart}
+# plot <- ggplot(data = productreview, aes(x = stars))
+# plot +
+#   geom_bar(stat="identity")
+# 
+# 
+# p <- ggplot(productreview, aes(x=stars, y=stars, fill=brand)) + 
+#   geom_violin() + coord_flip()
+# p
+# 
+# midpoints <- c(.5,1,2,3,4,4.5,5)
+# 
+# 
+# ggplot(data = productreview, aes (x = stars, y = counts)) + 
+#   geom_col() +
+#   scale_y_continuous(
+#     breaks = extended_breaks(Q = c(1, 5, 2, 4, 3))
+#   )
+
+
+#Good, break into panels, add labels
+ggplot(data = productreview, aes (x = stars)) + 
+  geom_histogram(binwidth=1,boundary=-.5) 
+
+
+grid.arrange(admitted_gre_hist, rejected_gre_hist,
+             admitted_gpa_hist, rejected_gpa_hist,
+             nrow=2)
+
 ```
 
 ```{r indicatormatrix}
