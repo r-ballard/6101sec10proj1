@@ -133,7 +133,6 @@ Based on the Q-Q plot above, we see that the graph is displaying a left skew as 
 
 ```{r results='markup'}
 shapiro.test(products$Rating)
-# ks.test(products$Rating, pnorm)
 ```
 
 For the Shapiro-Wilk test, we are given the following hypotheses:
@@ -157,6 +156,8 @@ mode.rating <- names(table(products$Rating))[table(products$Rating) == max(table
 * `Median`: `r median.rating`
 * `Mode`: `r mode.rating`
 
+Based on these results, this further proves that the data is left skewed since the mean is the lowest value followed by the median and the the mode being the highest value.
+
 #### Measures of Variation
 
 With the combined dataset, we will calculate the range, mean deviation, standard deviation, and variance.
@@ -173,30 +174,29 @@ variance.rating <- var(products$Rating)
 * `Standard Deviation`: `r sd.rating`
 * `Variance`: `r variance.rating`
 
-```{r results='markup'}
+With the dataset, we are given data that ranges between 3.8 ratings points between the lowest rating and the highest rating. The mean deviation shows us that on average, each value in the dataset is about 0.46 away from the mean. The standard deviation shows us that the data is dispersed 0.62 points in relation to the mean. The variance shows that each data point is about 0.385 points away from the mean and other data points in the dataset.
+
+```{r}
 z4rating <- (4 - mean.ratings)/sd.ratings
-z4rating
+```
+We will generate a z-score for a rating of 4 in our distribution.
+
+By taking the value of 4 and subtracting it with the mean 4.223 and dividing everything by the standard deviation of 0.62, we get the z score of `r z4rating`.
+
+Based on this result, we can determine that a rating of 4 lays within the range of the mean and one standard deviation to the left in our distribution.
+
+```{r}
+pnorm.rating <- pnorm(z4rating)
 ```
 
-```{r results='markup'}
-pnorm(z4rating)
-```
-
-```{r, echo=TRUE}
-products$zRating = scale(products$Rating)
-```
-
-```{r results='markup'}
-mean(products$zRating, na.rm = TRUE)
-sd(products$zRating, na.rm = TRUE)
-
-summary(products$zRating)
-```
+By taking the `pnorm()` function, `r pnorm.rating` is the probability that a rating of 4 is under the distribution.
 
 ```{r, message=FALSE, warning=FALSE, results='markup'}
 loadPkg("Hmisc")
 describe(products$Rating)
 ```
+
+Describe the overall data by using the the `describe()` function to highlight the ratings column.
 
 ### Ben & Jerry's
 
@@ -216,6 +216,7 @@ mean.bjratings <- mean(bj_data$Rating)
 sd.bjratings <- sd(bj_data$Rating)
 ```
 
+Looking at the graph, it is very similar to the histogram of all four brands combined, where it shows a left skewed distribution.
 The mean of the data above is `r mean.bjratings` and the standard deviation is `r sd.bjratings`
 
 ```{r}
@@ -290,6 +291,7 @@ mean.hdratings <- mean(hd_data$Rating)
 sd.hdratings <- sd(hd_data$Rating)
 ```
 
+From the graph, we can see that data is more concentrated equally to the right of the graph, which the data also presents a left skewed distribution.
 The mean of the data above is `r mean.hdratings` and the standard deviation is `r sd.hdratings`
 
 ```{r}
@@ -364,6 +366,7 @@ mean.talratings <- mean(talenti_data$Rating)
 sd.talratings <- sd(talenti_data$Rating)
 ```
 
+From the graph, we can see that there are not that much products within the Talenti brand. Despite this, the graph displays a left-skewed distribution as well.
 The mean of the data above is `r mean.talratings` and the standard deviation is `r sd.talratings`
 
 ```{r}
@@ -438,6 +441,7 @@ mean.breyratings <- mean(breyers_data$Rating)
 sd.breyratings <- sd(breyers_data$Rating)
 ```
 
+From the graph, the breyers data is similar to the histogram of Ben & Jerry's and the combined dataset. The graph also displays a left-skewed distribution.
 The mean of the data above is `r mean.breyratings` and the standard deviation is `r sd.breyratings`
 
 ```{r}
@@ -507,6 +511,7 @@ From the information above we can determine the following
 
 * The flavor Chocolate Chip Cookie Dough has appeared twice for being the least rated flavor across all brands
 * Talenti has the highest average rating compared to the other brands, whereas Breyers has the lowest average rating across all brands.
+* All of the brands display a left-skewed distribution.
 
 
 # Hypothesis Testing
