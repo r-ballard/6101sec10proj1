@@ -15,8 +15,9 @@ pkg_vector <- c("ggplot2",
                 "gridExtra",
                 "tidyverse",
                 "stringi",
-                "plotly",
-                "gridExtra")
+                "scales",
+                "gridExtra",
+                "lubridate")
 
 invisible(lapply(pkg_vector,loadPkg))
 ```
@@ -91,6 +92,7 @@ reviewdf = data.frame(read.csv(reviewpath,
                                           "texture"="character",
                                           "likes"="character")))
 
+reviewdf$date <- as.Date(reviewdf$date,'%Y-%m-%d')
 
 #Rename taste, ingredients, and texture columns in Ratings df. These are also integer 5 point ratings.
 reviewdf <- reviewdf %>% 
@@ -239,15 +241,48 @@ ggplotly()
 #   )
 
 
-#Good, break into panels, add labels
-ggplot(data = productreview, aes (x = stars)) + 
-  geom_histogram(binwidth=1,boundary=-.5) 
+ggplot(data = productreview, aes (x = stars, fill = brand)) + 
+  geom_histogram(binwidth=1,boundary=-.5) +
+  labs(title="Distribution of Star Ratings \nFor Icecream Brand",
+   x="Star Rating",
+   y="Review Count\n(in Thousands)") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  facet_grid(brand ~ .) +
+  scale_fill_manual(values=c("yellow3","green4","brown","pink4")) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+```{r contingency plot}
+
+brandrating_contingency_table<-table(productreview$brand,productreview$stars, dnn=c("Brand", "Star Rating"))
+
+brandrating_contingency_table
+prop.table(brandrating_contingency_table,margin=1)
+
+mosaicplot(brandrating_contingency_table)
+
+```
+```{r monthlyratingavg}
 
 
-grid.arrange(admitted_gre_hist, rejected_gre_hist,
-             admitted_gpa_hist, rejected_gpa_hist,
-             nrow=2)
+monthlyratingavg <- reviewdf %>%
+  mutate( date = ymd(date),Year = year(date), Month = month(date)) %>%
+  group_by(brand, Year, Month) %>%
+  summarise(avgrating = mean(stars) )
 
+monthlyratingavg$ym <- paste(monthlyratingavg$Year,'-', monthlyratingavg$Month)
+
+monthlyratingavg$ym <- ym(monthlyratingavg$ym)
+
+ggplot(monthlyratingavg, aes(ym, avgrating, group = brand, color = brand)) + 
+  geom_line() +
+  labs(title="Monthly Average Star Rating \nFor Icecream Brand",
+   x="Year-Month",
+   y="Average Rating") + 
+  geom_point() +
+  scale_color_manual(values=c("yellow3","green4","brown","pink4")) +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r indicatormatrix}
