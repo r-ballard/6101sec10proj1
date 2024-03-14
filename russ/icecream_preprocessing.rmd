@@ -282,6 +282,14 @@ ggplot(monthlyratingavg, aes(ym, avgrating, group = brand, color = brand)) +
    y="Average Rating") + 
   scale_color_manual(values=c("yellow3","green4","brown","pink4")) +
   theme(plot.title = element_text(hjust = 0.5))
+
+library(zoo)
+yq <- as.yearqtr(as.yearmon(monthlyratingavg$ym, "%Y-%m") + 1/12)
+monthlyratingavg$Season <- factor(format(yq, "%q"), levels = 1:4, 
+                labels = c("winter", "spring", "summer", "fall"))
+
+
+
 ```
 
 ```{r indicatormatrix}
