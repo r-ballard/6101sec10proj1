@@ -41,14 +41,14 @@ options(scientific=T, digits = 3)
 Our project uses an Ice Cream dataset that was retrieved from Kaggle from the following website: "https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data". The dataset contains a product and review datasets for 4 brands of ice cream, Ben & Jerry's, Häagen-Dazs, Talenti, and Breyers. For the purposes of this project, we will be using a combined dataset provided by the author that combines all the products and reviews of all brands into their respective csv file.
 
 ```{r import_data, echo=FALSE}
+library(dplyr)
+
 getwd()
 products <- data.frame(read.csv("products.csv", header = TRUE))
-str(products)
-head(products)
-
 reviews <- data.frame(read.csv("reviews.csv", header = TRUE))
-str(reviews)
-head(reviews)
+
+ice_cream <- inner_join(products, reviews, by="key")
+write.csv(ice_cream, "merged_data.csv", row.names=FALSE)
 ```
 
 ```{r}
@@ -99,6 +99,8 @@ colnames(reviews)[1:13]=c("Brand", "ProductID", "Username", "Date", "Stars", "Ti
 xkablesummary(products, title = "Summary of the products dataset")
 xkablesummary(reviews, title = "Summary of the reviews dataset")
 ```
+
+### For this project, we will be addressing the question: ...
 
 
 # Exploratory Data Analysis
@@ -238,8 +240,31 @@ min_productname <- bj_data$ProductName[min_rating_index]
 ```
 
 Based from the graph, the highest rated Ben & Jerry's products: `r max_productname`
+```{r, echo=FALSE, results='markup'}
+bj7_top <- subset(ice_cream, key == "7_bj")
+bj7_top_reviews <- bj7_top[, c("text")]
+head(bj7_top_reviews)
+```
+
+Above we see the first 6 reviews of Ben & Jerry's Chocolate Peanut Butter Split ice cream. Based from these reviews, customers absolutely love this flavor as it is unique by having banana and also having peanut butter cups in the ice cream.
+
+```{r, echo=FALSE, results='markup'}
+bj31_top <- subset(ice_cream, key == "31_bj")
+bj31_top_reviews <- bj31_top[, c("text")]
+head(bj31_top_reviews)
+```
+
+Above we see the first 6 reviews of Ben & Jerry's Ice Cream Sammie. Based on these reviews, customers are willing to travel far to get a hold of this product. This also serves as a problem as it is hard to find. Another issue stated is that there have been pints where there were little to no chocolate chunks. However, the customers overall love the product.
+
 
 Based from the graph, the lowest rated Ben & Jerry's products: `r min_productname`
+```{r, echo=FALSE, results='markup'}
+bj_low <- subset(ice_cream, key == "50_bj")
+bj_low_reviews <- bj_low[, c("text")]
+head(bj_low_reviews)
+```
+
+Above we see the first 6 reviews of Ben & Jerry's Chocolate Chip Cookie Dough Core. Customers were disappointed as the cookie dough core was either lacking or completely absent. When there was a a bit of dough in the core, it did not meet customers' expectations as many claim that it does not taste like cookie dough.
 
 
 #### Measures of Central Tendency
@@ -255,6 +280,8 @@ mode.bjrating <- names(table(bj_data$Rating))[table(bj_data$Rating) == max(table
 * `Mean`: `r mean.bjrating`
 * `Median`: `r median.bjrating`
 * `Mode`: `r mode.bjrating`
+
+The measures of central tendency shows us that the average rating is 4.332, a median rating of 4.6, with a rating of 4.7 appearing often from reviewers. Continuing on the trend from the overall ice cream flavors, the measures of central tendency for Ben & Jerry's data display a left skewed distribution since mean < median < mode. 
 
 #### Measures of Variation
 
@@ -272,6 +299,7 @@ variance.bjrating <- var(bj_data$Rating)
 * `Standard Deviation`: `r sd.bjrating`
 * `Variance`: `r variance.bjrating`
 
+With the Ben & Jerry's dataset, the data ranges 3.20 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.443 points away from the mean. The standard deviation shows us that the data is dispersed 0.60 points in relation to the mean. The variance shows that each data point is about 0.36 points away from the mean and other data points in the dataset.
 
 ### Häagen-Dazs
 
@@ -296,7 +324,7 @@ The mean of the data above is `r mean.hdratings` and the standard deviation is `
 
 ```{r}
 ggplot(hd_data, aes(x=ProductID, y=Rating)) +
-  geom_point(col='brown', fill='tan', alpha=0.7) +
+  geom_point(col='tan', fill='brown', alpha=0.7) +
   labs(x="ProductID", y='Rating') +
   labs(title="Ratings for each individual Häagen-Dazs products") + 
   theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
@@ -313,9 +341,54 @@ min_productname <- hd_data$ProductName[min_rating_index]
 ```
 
 Based from the graph, the highest rated Häagen-Dazs products: `r max_productname`
+```{r, echo=FALSE, results='markup'}
+hd14_top <- subset(ice_cream, key == "14_hd")
+hd14_top_reviews <- hd14_top[, c("text")]
+head(hd14_top_reviews)
+```
+
+Above are the first 6 reviews of Häagen-Dazs' Chocolate Fudge Non-Dairy Bar. Customers that are lactose intolerant absolutely love this product. Having tried other non-dairy products from other brands, customers rate this product above all as the flavor tastes amazing for a non-dairy product.
+
+```{r, echo=FALSE, results='markup'}
+hd31_top <- subset(ice_cream, key == "31_hd")
+hd31_top_reviews <- hd31_top[, c("text")]
+head(hd31_top_reviews)
+```
+
+Above are the first 6 reviews of Häagen-Dazs' Honey Salted Caramel Almond Ice Cream. Customers absolutely love this flavor and considering it as their favorite flavor and eating multiple pints in one day.
+
+```{r, echo=FALSE, results='markup'}
+hd43_top <- subset(ice_cream, key == "43_hd")
+hd43_top_reviews <- hd43_top[, c("text")]
+head(hd43_top_reviews)
+```
+
+Above are the first 6 reviews of Häagen-Dazs' Peppermint Bark Ice Cream. Customers absolutely love this flavor. The only issue that was stated in the reviews is that this product is not available year-round, only in December.
+
+```{r, echo=FALSE, results='markup'}
+hd44_top <- subset(ice_cream, key == "44_hd")
+hd44_top_reviews <- hd44_top[, c("text")]
+head(hd44_top_reviews)
+```
+
+Above are the first 6 reviews of Häagen-Dazs' Peppermint Bark Ice Cream Bar. This product is the bar version of the Peppermint Bark Ice Cream above. Customers love that there are multiple bars, and complain on the product not being available year-round.
+
+```{r, echo=FALSE, results='markup'}
+hd63_top <- subset(ice_cream, key == "63_hd")
+hd63_top_reviews <- hd63_top[, c("text")]
+head(hd63_top_reviews)
+```
+
+Above are the first 6 reviews of Häagen-Dazs' Vanilla Caramel White Chocolate Trio Crispy Layers. Customers are obsessed with the flavor combination, the creamy texture, and are just overall satisfied with the product.
 
 Based from the graph, the lowest rated Häagen-Dazs product: `r min_productname`
+```{r, echo=FALSE, results='markup'}
+hd_low <- subset(ice_cream, key == "66_hd")
+hd_low_reviews <- hd_low[, c("text")]
+head(hd_low_reviews)
+```
 
+Above are the first 6 reviews of Häagen-Dazs' Vanilla Milk Chocolate Almond Ice Cream Bar. The customers complained that the quality of the product not meeting their expectations. Others complained about the lack of almonds in the bar and a thinner layer of chocolate. 
 
 #### Measures of Central Tendency
 
@@ -330,6 +403,8 @@ mode.hdrating <- names(table(hd_data$Rating))[table(hd_data$Rating) == max(table
 * `Mean`: `r mean.hdrating`
 * `Median`: `r median.hdrating`
 * `Mode`: `r mode.hdrating`
+
+The measures of central tendency shows us that the average rating is 4.307, a median rating of 4.5, and with the ratings of 4.6 and 4.8 being awarded the most often by reviewers. These values also prove that the data displays a left skewed distribution.
 
 #### Measures of Variation
 
@@ -347,6 +422,7 @@ variance.hdrating <- var(hd_data$Rating)
 * `Standard Deviation`: `r sd.hdrating`
 * `Variance`: `r variance.hdrating`
 
+With the Häagen-Dazs dataset, the data ranges 2.5 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.446 points away from the mean. The standard deviation shosw us that the data is dispersed 0.597 points in relation to the mean. The variance shows that each data point is about 0.357 points away from the mean and other data points in the dataset.
 
 ### Talenti
 
@@ -388,8 +464,47 @@ min_productname <- talenti_data$ProductName[min_rating_index]
 ```
 
 Based from the graph, the highest rated Talenti products: `r max_productname`
+```{r, echo=FALSE, results='markup'}
+tal2_top <- subset(ice_cream, key == "2_talenti")
+tal2_top_reviews <- tal2_top[, c("text")]
+head(tal2_top_reviews)
+```
+
+Above are the first 6 reviews of Talenti's Belgian Chocolate Gelato. Customers praise the rich and creaminess flavor as well as the use of Belgian chocolate exceeds customers' expectations.
+
+```{r, echo=FALSE, results='markup'}
+tal5_top <- subset(ice_cream, key == "5_talenti")
+tal5_top_reviews <- tal5_top[, c("text")]
+head(tal5_top_reviews)
+```
+
+Above are the first 6 reviews of Talenti's Caramel Apple Pie Gelato. Customers love the rich and creamy texture, with the flavor not being too overbearing but still good. The only complaint is that the product is only available seasonally and not year-round.
+
+```{r, echo=FALSE, results='markup'}
+tal11_top <- subset(ice_cream, key == "11_talenti")
+tal11_top_reviews <- tal11_top[, c("text")]
+head(tal11_top_reviews)
+```
+
+Above are the first 6 reviews of Talenti's Almond Chocolate Gelato. Customers praise the coconut, almond, and chocolate combination. Since this flavor is well-received, it is often hard to find in stores, and when there are products in stock, customers would grab more than one pint.
+
+```{r, echo=FALSE, results='markup'}
+tal30_top <- subset(ice_cream, key == "30_talenti")
+tal30_top_reviews <- tal30_top[, c("text")]
+head(tal30_top_reviews)
+```
+
+Above are the first 6 reviews of Talenti's Organic Oak-aged Vanilla Gelato. Customers love the flavor along with its creamy texture to the point where many claim for it to be their favorite flavor. 
+
 
 Based from the graph, the lowest rated Talenti product: `r min_productname`
+```{r, echo=FALSE, results='markup'}
+tal_low <- subset(ice_cream, key == "9_talenti")
+tal_low_reviews <- tal_low[, c("text")]
+head(tal_low_reviews)
+```
+
+Above we see the first 6 reviews of Talenti's Chocolate Chip Cookie Dough Gelato. Customers complained about the lack of cookie dough, the poor taste of the flavor, and occasionally an uneven distribution of vanilla and chocolate.
 
 
 #### Measures of Central Tendency
@@ -405,6 +520,8 @@ mode.talrating <- names(table(talenti_data$Rating))[table(talenti_data$Rating) =
 * `Mean`: `r mean.talrating`
 * `Median`: `r median.talrating`
 * `Mode`: `r mode.talrating`
+
+The measures of central tendency show that the average rating is 4.356, a median rating of 4.4, and having a rating of 4.7 awarded the most. Like the other brands, a left skewed distribution is displayed from the data.
 
 #### Measures of Variation
 
@@ -422,6 +539,7 @@ variance.talrating <- var(talenti_data$Rating)
 * `Standard Deviation`: `r sd.talrating`
 * `Variance`: `r variance.talrating`
 
+With the Talenti dataset, the data ranges 2 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.28 points away from the mean. The standard deviation shosw us that the data is dispersed 0.387 points in relation to the mean. The variance shows that each data point is about 0.15 points away from the mean and other data points in the dataset.
 
 ### Breyers
 
@@ -431,7 +549,7 @@ Breyers is committed on using high quality ingredients. Breyers "start with high
 breyers_data <- subset(products, Brand == "breyers")
 
 ggplot(breyers_data, aes(Rating)) +
-  geom_histogram(col='white', fill='green', alpha=0.7) +
+  geom_histogram(col='white', fill='darkgreen', alpha=0.7) +
   labs(x="Rating", y="Frequency") +
   labs(title="Breyers' Product Rating Histogram using `ggplot`")
 ```
@@ -446,7 +564,7 @@ The mean of the data above is `r mean.breyratings` and the standard deviation is
 
 ```{r}
 ggplot(breyers_data, aes(x=ProductID, y=Rating)) +
-  geom_point(col='green', fill='white', alpha=0.7) +
+  geom_point(col='darkgreen', fill='white', alpha=0.7) +
   labs(x="ProductID", y='Rating') +
   labs(title="Ratings for each individual Breyers products") + 
   theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
@@ -464,8 +582,23 @@ min_productname <- breyers_data$ProductName[min_rating_index]
 
 Based from the graph, the highest rated Breyers product: `r max_productname`
 
+```{r, echo=FALSE, results='markup'}
+breyers_top <- subset(ice_cream, key == "41_breyers")
+breyers_top_reviews <- breyers_top[, c("text")]
+breyers_top_reviews
+```
+
+Above are the two reviews of Breyers' Oreo Snack Cups 10ct. Both reviews praise on how the ice cream is portioned out.
+
 Based from the graph, the lowest rated Breyers product: `r min_productname`
 
+```{r, echo=FALSE, results='markup'}
+breyers_low <- subset(ice_cream, key == "66_breyers")
+breyers_low_reviews <- breyers_low[, c("text")]
+head(breyers_low_reviews)
+```
+
+Above are the first 6 reviews of Breyers' Layered Dessert S'mores. Customers complained on how the product does not taste like s'mores. Specifically, the marshmellows and graham crackers was either lacking or tasted awful, and the overall taste of what customers expected for s'mores did not meet their expectations. Though some customers actually like the product.
 
 #### Measures of Central Tendency
 
@@ -480,6 +613,8 @@ mode.breyrating <- names(table(breyers_data$Rating))[table(breyers_data$Rating) 
 * `Mean`: `r mean.breyrating`
 * `Median`: `r median.breyrating`
 * `Mode`: `r mode.breyrating`
+
+The measures of central tendency show that the average rating is 3.962, the median rating is 4.2, with a score of 4.4 appearing most often. Again like the other brands, these values prove that the data displays a left skewed distribution.
 
 #### Measures of Variation
 
@@ -497,6 +632,8 @@ variance.breyrating <- var(breyers_data$Rating)
 * `Standard Deviation`: `r sd.breyrating`
 * `Variance`: `r variance.breyrating`
 
+With the Breyers dataset, the data ranges 3.80 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.544 points away from the mean. The standard deviation shosw us that the data is dispersed 0.711 points in relation to the mean. The variance shows that each data point is about 0.506 points away from the mean and other data points in the dataset.
+
 
 ## EDA Conclusion
 
@@ -512,9 +649,7 @@ From the information above we can determine the following
 * The flavor Chocolate Chip Cookie Dough has appeared twice for being the least rated flavor across all brands
 * Talenti has the highest average rating compared to the other brands, whereas Breyers has the lowest average rating across all brands.
 * All of the brands display a left-skewed distribution.
-
-
-# Hypothesis Testing
+* Common complaints are lacking or non-existent toppings, flavors not meeting customers' expectations,
 
 
 # References
