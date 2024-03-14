@@ -280,7 +280,6 @@ ggplot(monthlyratingavg, aes(ym, avgrating, group = brand, color = brand)) +
   labs(title="Monthly Average Star Rating \nFor Icecream Brand",
    x="Year-Month",
    y="Average Rating") + 
-  geom_point() +
   scale_color_manual(values=c("yellow3","green4","brown","pink4")) +
   theme(plot.title = element_text(hjust = 0.5))
 ```
