@@ -100,10 +100,9 @@ xkablesummary(products, title = "Summary of the products dataset")
 xkablesummary(reviews, title = "Summary of the reviews dataset")
 ```
 
-### For this project, we will be addressing the question: ...
-
-
 # Exploratory Data Analysis
+
+#### For this project we will be addressing the question: What are the most common factors stated in the customer reviews that affect the product ratings? So that businesses can either improve on lower rated products, or create new products keeping customer feedback in mind.
 
 We will explore the Ice Cream dataset by creating graphs, performing tests, and finding the measures of central tendency and variation. First, we'll look at the overall dataset, and then the individual datasets of each of the four brands.
 
