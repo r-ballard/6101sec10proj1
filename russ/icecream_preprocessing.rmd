@@ -268,7 +268,7 @@ mosaicplot(brandrating_contingency_table)
 ```{r seasonalboxplots}
 
 #not super informative
-reviewdf %>%
+reviewdf <- reviewdf %>%
 mutate( date = ymd(date),Year = year(date), Month = month(date))
 
 reviewdf$ym <- paste(reviewdf$Year,'-', reviewdf$Month)
