@@ -43,6 +43,22 @@ outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/")
 unzip(zippath,exdir=outpath)
 ```
 
+
+```{r loadcolordf}
+brandcolorpath <- file.path(projwd, datadir, "processing/brandcolors.csv")
+brandcolordf <- data.frame(read.csv(brandcolorpath,
+                           header=TRUE,
+                           sep=",",
+                           quote="\"",
+                           colClasses=c("brand"="character",
+                                        "color"="character",
+                                        "fill"="character")))
+brandcolordf$color
+bjcolor<-brandcolordf$color[brandcolordf$brand=="bj"]
+
+```
+
+
 ```{r loadproductdf}
 #TODO read brand datasets to compare to combined
 
@@ -242,14 +258,15 @@ ggplotly()
 #   )
 
 
-ggplot(data = productreview, aes (x = stars, fill = brand)) + 
+ggplot(data = productreview, aes (x = stars, color=brand, fill = brand)) + 
   geom_histogram(binwidth=1,boundary=-.5) +
   labs(title="Distribution of Star Ratings \nFor Icecream Brand",
    x="Star Rating",
    y="Review Count\n(in Thousands)") +
   scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
   facet_grid(brand ~ .) +
-  scale_fill_manual(values=c("yellow3","green4","brown","pink4")) +
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color) +
   theme(plot.title = element_text(hjust = 0.5))
 
 ```
@@ -280,8 +297,10 @@ reviewdf$Season <- factor(format(yq, "%q"), levels = 1:4,
                 labels = c("winter", "spring", "summer", "fall"))
 
 ggplot(reviewdf,aes(Season,stars)) +
-  geom_boxplot(aes(fill=brand)) + 
-  scale_fill_manual(values=c("yellow3","green4","brown","pink4"))
+  geom_boxplot(aes(color=brand,fill=brand)) + 
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color)
+  
 
 
 
@@ -299,12 +318,13 @@ monthlyratingavg$ym <- paste(monthlyratingavg$Year,'-', monthlyratingavg$Month)
 
 monthlyratingavg$ym <- ym(monthlyratingavg$ym)
 
-ggplot(monthlyratingavg, aes(ym, avgrating, group = brand, color = brand)) + 
+ggplot(monthlyratingavg, aes(ym, avgrating, group = brand, color = brand, fill=brand)) + 
   geom_line() +
   labs(title="Monthly Average Star Rating \nFor Icecream Brand",
    x="Year-Month",
    y="Average Rating") + 
-  scale_color_manual(values=c("yellow3","green4","brown","pink4")) +
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color) +
   theme(plot.title = element_text(hjust = 0.5))
 
 ```
@@ -316,8 +336,9 @@ monthlyratingavg$Season <- factor(format(yq, "%q"), levels = 1:4,
                 labels = c("winter", "spring", "summer", "fall"))
 
 ggplot(monthlyratingavg,aes(Season,avgrating)) +
-  geom_boxplot(aes(fill=brand)) + 
-  scale_fill_manual(values=c("yellow3","green4","brown","pink4"))
+  geom_boxplot(aes(fill=brand,color=brand)) + 
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color)
 ```
 
 ```{r indicatormatrix}
