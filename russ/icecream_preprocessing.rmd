@@ -153,18 +153,18 @@ prodcombdf$ingredients <- stri_replace_all_fixed(prodcombdf$ingredients,
 ```{r indicator regex}
 
 
-prodcombdf$HAS_VANILLA <- as.integer(grepl(pattern = "VANILLA", x = prodcombdf$ingredients))
-prodcombdf$HAS_ORGANIC <- as.integer(grepl(pattern = "ORGANIC", x = prodcombdf$ingredients))
-prodcombdf$HAS_CARAMEL <- as.integer(grepl(pattern = "CARAMEL", x = prodcombdf$ingredients))
+prodcombdf$HAS_VANILLA <- as.factor(as.integer(grepl(pattern = "VANILLA", x = prodcombdf$ingredients)))
+prodcombdf$HAS_ORGANIC <- as.factor(as.integer(grepl(pattern = "ORGANIC", x = prodcombdf$ingredients)))
+prodcombdf$HAS_CARAMEL <- as.factor(as.integer(grepl(pattern = "CARAMEL", x = prodcombdf$ingredients)))
 
 fruitvec <- c("RASPBERR","CHERR","BLUEBERR","BANANA")
-prodcombdf$HAS_FRUIT <- as.integer(grepl(pattern=paste(fruitvec,collapse="|"), x=prodcombdf$ingredients))
+prodcombdf$HAS_FRUIT <- as.factor(as.integer(grepl(pattern=paste(fruitvec,collapse="|"), x=prodcombdf$ingredients)))
 
 chocvec <- c("CHOCOLAT","COCO")
-prodcombdf$HAS_CHOCOLATE <- as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=prodcombdf$ingredients))
+prodcombdf$HAS_CHOCOLATE <- as.factor(as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=prodcombdf$ingredients)))
 
-prodcombdf$IS_BAR <- as.integer(grepl(pattern = "BAR", x = prodcombdf$name) | 
-                                grepl(pattern = "BAR", x = prodcombdf$subhead))
+prodcombdf$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = prodcombdf$name) | 
+                                grepl(pattern = "BAR", x = prodcombdf$subhead)))
 
 ```
 
@@ -268,7 +268,6 @@ ggplot(data = productreview, aes (x = stars, color=brand, fill = brand)) +
   scale_fill_manual(values=brandcolordf$fill) +
   scale_colour_manual(values=brandcolordf$color) +
   theme(plot.title = element_text(hjust = 0.5))
-
 ```
 
 ```{r contingency plot}
@@ -299,8 +298,11 @@ reviewdf$Season <- factor(format(yq, "%q"), levels = 1:4,
 ggplot(reviewdf,aes(Season,stars)) +
   geom_boxplot(aes(color=brand,fill=brand)) + 
   scale_fill_manual(values=brandcolordf$fill) +
-  scale_colour_manual(values=brandcolordf$color)
-  
+  scale_colour_manual(values=brandcolordf$color) +
+  labs(title="Distribution of Product Average Star Ratings \nFor Icecream Brand In A Season",
+       x="Season",
+       y="Brand Season Average Star Rating") +
+  theme(plot.title = element_text(hjust = 0.5))
 
 
 
@@ -340,6 +342,34 @@ ggplot(monthlyratingavg,aes(Season,avgrating)) +
   scale_fill_manual(values=brandcolordf$fill) +
   scale_colour_manual(values=brandcolordf$color)
 ```
+
+```{r chocolateboxplot}
+ggplot(prodcombdf,aes(HAS_CHOCOLATE,rating)) +
+  geom_boxplot(aes(fill=HAS_CHOCOLATE)) + 
+  scale_fill_manual(values=c("grey","chocolate4"))
+
+ggplot(prodcombdf,aes(HAS_FRUIT,rating)) +
+  geom_boxplot(aes(fill=HAS_FRUIT)) + 
+  scale_fill_manual(values=c("grey","deeppink"))
+
+ggplot(prodcombdf,aes(HAS_ORGANIC,rating)) +
+  geom_boxplot(aes(fill=HAS_ORGANIC)) + 
+  scale_fill_manual(values=c("grey","chartreuse3"))
+
+ggplot(prodcombdf,aes(HAS_CARAMEL,rating)) +
+  geom_boxplot(aes(fill=HAS_CARAMEL)) + 
+  scale_fill_manual(values=c("grey","darkgoldenrod4"))
+
+
+#only a single bar identified using current method
+# ggplot(prodcombdf,aes(IS_BAR,rating)) +
+#   geom_boxplot(aes(fill=IS_BAR)) + 
+#   scale_fill_manual(values=c("grey","darksalmon"))
+
+```
+
+
+
 
 ```{r indicatormatrix}
   ingredindicator <- prodcombdf %>% 
