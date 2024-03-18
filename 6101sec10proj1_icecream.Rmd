@@ -69,6 +69,22 @@ outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/")
 unzip(zippath,exdir=outpath)
 ```
 
+
+
+```{r load colorbrew}
+```{r loadcolordf}
+brandcolorpath <- file.path(projwd, datadir, "processing/brandcolors.csv")
+brandcolordf <- data.frame(read.csv(brandcolorpath,
+                           header=TRUE,
+                           sep=",",
+                           quote="\"",
+                           colClasses=c("brand"="character",
+                                        "color"="character",
+                                        "fill"="character")))
+
+```
+
+
 ```{r load_products}
 prodcombpath <- file.path(outpath, "combined/products.csv")
 products <- data.frame(read.csv(prodcombpath,
@@ -86,10 +102,9 @@ products <- data.frame(read.csv(prodcombpath,
 ```
 
 
-
-
 ```{r load_reviews}
 
+reviewpath <- file.path(outpath, "combined/reviews.csv")
 reviews <- data.frame(read.csv(reviewpath,
                             header=TRUE,
                             sep=",",
@@ -109,33 +124,26 @@ reviews <- data.frame(read.csv(reviewpath,
                                           "texture"="character",
                                           "likes"="character")))
 
-review$date <- as.Date(reviewdf$date,'%Y-%m-%d')
-
+reviews$date <- as.Date(reviews$date,'%Y-%m-%d')
 ```
-
-```{r productindicators}
-products$HAS_VANILLA <- as.factor(as.integer(grepl(pattern = "VANILLA", x = products$ingredients)))
-products$HAS_ORGANIC <- as.factor(as.integer(grepl(pattern = "ORGANIC", x = products$ingredients)))
-products$HAS_CARAMEL <- as.factor(as.integer(grepl(pattern = "CARAMEL", x = products$ingredients)))
-
-fruitvec <- c("RASPBERR","CHERR","BLUEBERR","BANANA")
-products$HAS_FRUIT <- as.factor(as.integer(grepl(pattern=paste(fruitvec,collapse="|"), x=products$ingredients)))
-
-chocvec <- c("CHOCOLAT","COCO")
-products$HAS_CHOCOLATE <- as.factor(as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=products$ingredients)))
-
-products$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = products$name) | 
-                                grepl(pattern = "BAR", x = products$subhead)))
-```
-
 
 ```{r joinproductreview}
 
-ice_cream <- inner_join(products, reviews, by="key")
-write.csv(ice_cream, "merged_data.csv", row.names=FALSE)
+productreview <- left_join(reviews,
+                           products %>% select(key,
+                                                 HAS_CARAMEL,
+                                                 HAS_CHOCOLATE,
+                                                 HAS_FRUIT,
+                                                 HAS_VANILLA,
+                                                 HAS_ORGANIC,
+                                                 IS_BAR),
+                           by="key", multiple="all")
+
+#TODO: DELETE, write statement, don't need to write raw
+#write.csv(productreview, "merged_data.csv", row.names=FALSE)
 ```
 
-```{r}
+```{r rowcounts}
 nrow_products <- nrow(products)
 nrow_reviews <- nrow(reviews)
 ```
@@ -171,12 +179,28 @@ For the `reviews.csv` file, the variables in the dataset are:
 
 Regarding the dataset, there are important considerations that the author provides for users. First, "the collection of reviews on the brand websites may not be representative of overall opinion, i.e. there may be review censoring or presence of fake reviews meant to help/harm the image of the brand" (Pond, 2020). In order to combat this, the author, "intentionally chose brands that host some negative reviews on their website" (Pond, 2020). Next, the author acknowledges the parent companies of each of the brands. "Ben & Jerry's, Breyers, and Talenti are all owned by Uniever. Häagen-Dazs is owned by Froneri" (Pond, 2020). It is also important to note that, "Talenti is distinguished from the other brands as they produce gelato" (Pond, 2020).
 
-```{r echo=FALSE}
+```{r colrenames echo=FALSE}
 colnames(products)[1:8]=c("Brand", "ProductID", "ProductName", "Subhead","ProductDescription", "Rating", "RatingCount", "Ingredients")
 # xkabledplyhead(products, title = "Product header rows")
 
 colnames(reviews)[1:13]=c("Brand", "ProductID", "Username", "Date", "Stars", "Title", "Helpful", "Not Helpful", "Review", "Taste", "Ingredients", "Texture", "Likes")
 # xkabledplyhead(reviews, title = "Review header rows")
+```
+
+
+```{r productindicators}
+products$HAS_VANILLA <- as.factor(as.integer(grepl(pattern = "VANILLA", x = products$ingredients)))
+products$HAS_ORGANIC <- as.factor(as.integer(grepl(pattern = "ORGANIC", x = products$ingredients)))
+products$HAS_CARAMEL <- as.factor(as.integer(grepl(pattern = "CARAMEL", x = products$ingredients)))
+
+fruitvec <- c("RASPBERR","CHERR","BLUEBERR","BANANA")
+products$HAS_FRUIT <- as.factor(as.integer(grepl(pattern=paste(fruitvec,collapse="|"), x=products$ingredients)))
+
+chocvec <- c("CHOCOLAT","COCO")
+products$HAS_CHOCOLATE <- as.factor(as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=products$ingredients)))
+
+products$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = products$name) | 
+                                grepl(pattern = "BAR", x = products$subhead)))
 ```
 
 ```{r results='markup'}
@@ -324,7 +348,7 @@ min_productname <- bj_data$ProductName[min_rating_index]
 
 Based from the graph, the highest rated Ben & Jerry's products: `r max_productname`
 ```{r, echo=FALSE, results='markup'}
-bj7_top <- subset(ice_cream, key == "7_bj")
+bj7_top <- subset(productreview, key == "7_bj")
 bj7_top_reviews <- bj7_top[, c("text")]
 head(bj7_top_reviews)
 ```
@@ -332,7 +356,7 @@ head(bj7_top_reviews)
 Above we see the first 6 reviews of Ben & Jerry's Chocolate Peanut Butter Split ice cream. Based from these reviews, customers absolutely love this flavor as it is unique by having banana and also having peanut butter cups in the ice cream.
 
 ```{r, echo=FALSE, results='markup'}
-bj31_top <- subset(ice_cream, key == "31_bj")
+bj31_top <- subset(productreview, key == "31_bj")
 bj31_top_reviews <- bj31_top[, c("text")]
 head(bj31_top_reviews)
 ```
@@ -342,7 +366,7 @@ Above we see the first 6 reviews of Ben & Jerry's Ice Cream Sammie. Based on the
 
 Based from the graph, the lowest rated Ben & Jerry's products: `r min_productname`
 ```{r, echo=FALSE, results='markup'}
-bj_low <- subset(ice_cream, key == "50_bj")
+bj_low <- subset(productreview, key == "50_bj")
 bj_low_reviews <- bj_low[, c("text")]
 head(bj_low_reviews)
 ```
@@ -425,7 +449,7 @@ min_productname <- hd_data$ProductName[min_rating_index]
 
 Based from the graph, the highest rated Häagen-Dazs products: `r max_productname`
 ```{r, echo=FALSE, results='markup'}
-hd14_top <- subset(ice_cream, key == "14_hd")
+hd14_top <- subset(productreview, key == "14_hd")
 hd14_top_reviews <- hd14_top[, c("text")]
 head(hd14_top_reviews)
 ```
@@ -433,7 +457,7 @@ head(hd14_top_reviews)
 Above are the first 6 reviews of Häagen-Dazs' Chocolate Fudge Non-Dairy Bar. Customers that are lactose intolerant absolutely love this product. Having tried other non-dairy products from other brands, customers rate this product above all as the flavor tastes amazing for a non-dairy product.
 
 ```{r, echo=FALSE, results='markup'}
-hd31_top <- subset(ice_cream, key == "31_hd")
+hd31_top <- subset(productreview, key == "31_hd")
 hd31_top_reviews <- hd31_top[, c("text")]
 head(hd31_top_reviews)
 ```
@@ -441,7 +465,7 @@ head(hd31_top_reviews)
 Above are the first 6 reviews of Häagen-Dazs' Honey Salted Caramel Almond Ice Cream. Customers absolutely love this flavor and considering it as their favorite flavor and eating multiple pints in one day.
 
 ```{r, echo=FALSE, results='markup'}
-hd43_top <- subset(ice_cream, key == "43_hd")
+hd43_top <- subset(productreview, key == "43_hd")
 hd43_top_reviews <- hd43_top[, c("text")]
 head(hd43_top_reviews)
 ```
@@ -449,7 +473,7 @@ head(hd43_top_reviews)
 Above are the first 6 reviews of Häagen-Dazs' Peppermint Bark Ice Cream. Customers absolutely love this flavor. The only issue that was stated in the reviews is that this product is not available year-round, only in December.
 
 ```{r, echo=FALSE, results='markup'}
-hd44_top <- subset(ice_cream, key == "44_hd")
+hd44_top <- subset(productreview, key == "44_hd")
 hd44_top_reviews <- hd44_top[, c("text")]
 head(hd44_top_reviews)
 ```
@@ -457,7 +481,7 @@ head(hd44_top_reviews)
 Above are the first 6 reviews of Häagen-Dazs' Peppermint Bark Ice Cream Bar. This product is the bar version of the Peppermint Bark Ice Cream above. Customers love that there are multiple bars, and complain on the product not being available year-round.
 
 ```{r, echo=FALSE, results='markup'}
-hd63_top <- subset(ice_cream, key == "63_hd")
+hd63_top <- subset(productreview, key == "63_hd")
 hd63_top_reviews <- hd63_top[, c("text")]
 head(hd63_top_reviews)
 ```
@@ -466,7 +490,7 @@ Above are the first 6 reviews of Häagen-Dazs' Vanilla Caramel White Chocolate T
 
 Based from the graph, the lowest rated Häagen-Dazs product: `r min_productname`
 ```{r, echo=FALSE, results='markup'}
-hd_low <- subset(ice_cream, key == "66_hd")
+hd_low <- subset(productreview, key == "66_hd")
 hd_low_reviews <- hd_low[, c("text")]
 head(hd_low_reviews)
 ```
@@ -548,7 +572,7 @@ min_productname <- talenti_data$ProductName[min_rating_index]
 
 Based from the graph, the highest rated Talenti products: `r max_productname`
 ```{r, echo=FALSE, results='markup'}
-tal2_top <- subset(ice_cream, key == "2_talenti")
+tal2_top <- subset(productreview, key == "2_talenti")
 tal2_top_reviews <- tal2_top[, c("text")]
 head(tal2_top_reviews)
 ```
@@ -556,7 +580,7 @@ head(tal2_top_reviews)
 Above are the first 6 reviews of Talenti's Belgian Chocolate Gelato. Customers praise the rich and creaminess flavor as well as the use of Belgian chocolate exceeds customers' expectations.
 
 ```{r, echo=FALSE, results='markup'}
-tal5_top <- subset(ice_cream, key == "5_talenti")
+tal5_top <- subset(productreview, key == "5_talenti")
 tal5_top_reviews <- tal5_top[, c("text")]
 head(tal5_top_reviews)
 ```
@@ -564,7 +588,7 @@ head(tal5_top_reviews)
 Above are the first 6 reviews of Talenti's Caramel Apple Pie Gelato. Customers love the rich and creamy texture, with the flavor not being too overbearing but still good. The only complaint is that the product is only available seasonally and not year-round.
 
 ```{r, echo=FALSE, results='markup'}
-tal11_top <- subset(ice_cream, key == "11_talenti")
+tal11_top <- subset(productreview, key == "11_talenti")
 tal11_top_reviews <- tal11_top[, c("text")]
 head(tal11_top_reviews)
 ```
@@ -572,7 +596,7 @@ head(tal11_top_reviews)
 Above are the first 6 reviews of Talenti's Almond Chocolate Gelato. Customers praise the coconut, almond, and chocolate combination. Since this flavor is well-received, it is often hard to find in stores, and when there are products in stock, customers would grab more than one pint.
 
 ```{r, echo=FALSE, results='markup'}
-tal30_top <- subset(ice_cream, key == "30_talenti")
+tal30_top <- subset(productreview, key == "30_talenti")
 tal30_top_reviews <- tal30_top[, c("text")]
 head(tal30_top_reviews)
 ```
@@ -582,7 +606,7 @@ Above are the first 6 reviews of Talenti's Organic Oak-aged Vanilla Gelato. Cust
 
 Based from the graph, the lowest rated Talenti product: `r min_productname`
 ```{r, echo=FALSE, results='markup'}
-tal_low <- subset(ice_cream, key == "9_talenti")
+tal_low <- subset(productreview, key == "9_talenti")
 tal_low_reviews <- tal_low[, c("text")]
 head(tal_low_reviews)
 ```
@@ -666,7 +690,7 @@ min_productname <- breyers_data$ProductName[min_rating_index]
 Based from the graph, the highest rated Breyers product: `r max_productname`
 
 ```{r, echo=FALSE, results='markup'}
-breyers_top <- subset(ice_cream, key == "41_breyers")
+breyers_top <- subset(productreview, key == "41_breyers")
 breyers_top_reviews <- breyers_top[, c("text")]
 breyers_top_reviews
 ```
@@ -676,7 +700,7 @@ Above are the two reviews of Breyers' Oreo Snack Cups 10ct. Both reviews praise 
 Based from the graph, the lowest rated Breyers product: `r min_productname`
 
 ```{r, echo=FALSE, results='markup'}
-breyers_low <- subset(ice_cream, key == "66_breyers")
+breyers_low <- subset(productreview, key == "66_breyers")
 breyers_low_reviews <- breyers_low[, c("text")]
 head(breyers_low_reviews)
 ```
