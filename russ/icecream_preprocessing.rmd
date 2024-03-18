@@ -1,0 +1,399 @@
+---
+title: "preprocessing.rmd"
+author: "rballard"
+date: "2024-03-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+set.seed(20052)
+library(ezids)
+
+pkg_vector <- c("ggplot2",
+                "gridExtra",
+                "tidyverse",
+                "stringi",
+                "scales",
+                "gridExtra",
+                "lubridate",
+                "zoo")
+
+invisible(lapply(pkg_vector,loadPkg))
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r unzip}
+
+projwd <- "C:/Users/russe/Documents/github/6101sec10proj1"
+datadir <- "data"
+rawdir <- "raw"
+zipf<- "icecream.zip"
+outf<-"icecream"
+
+zippath <- file.path(projwd, datadir, rawdir, zipf, fsep="/")
+outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/") 
+  
+unzip(zippath,exdir=outpath)
+```
+
+
+```{r loadcolordf}
+brandcolorpath <- file.path(projwd, datadir, "processing/brandcolors.csv")
+brandcolordf <- data.frame(read.csv(brandcolorpath,
+                           header=TRUE,
+                           sep=",",
+                           quote="\"",
+                           colClasses=c("brand"="character",
+                                        "color"="character",
+                                        "fill"="character")))
+brandcolordf$color
+bjcolor<-brandcolordf$color[brandcolordf$brand=="bj"]
+
+```
+
+
+```{r loadproductdf}
+#TODO read brand datasets to compare to combined
+
+prodcombpath <- file.path(outpath, "combined/products.csv")
+prodcombdf = data.frame(read.csv(prodcombpath,
+                            header=TRUE,
+                            sep=",",
+                            quote="\"",
+                            colClasses=c("brand"="factor",
+                                          "key"="character",
+                                          "name"="character",
+                                          "subhead"="character",
+                                          "description"="character",
+                                          "rating"="numeric",
+                                          "rating_count"="numeric",
+                                          "ingredients"="character")))
+
+processingpath <- file.path(projwd, datadir, "processing/ingredientrenamedict.csv" )
+
+ingredientprocessingdict = data.frame(read.csv(processingpath))
+
+
+head(prodcombdf)
+```
+First we inspect the dataset manually by opening the .csv in notepad in order to avoid any unfortunate autoformatting that may be caused by opening in Excel. In doing this we see that the first line contains the headers: `brand`,`key`,`name`,`subhead`,`description`,`rating`,`rating_count`,`ingredients`. According to the manifest the `key` field is a join field to the reviews dataset.
+
+```{r loadreviewdf}
+#TODO read brand datasets to compare to combined
+
+reviewpath <- file.path(outpath, "combined/reviews.csv")
+#comma outside of quote line 7952
+reviewdf = data.frame(read.csv(reviewpath,
+                            header=TRUE,
+                            sep=",",
+                            quote="\"",
+                            na.strings=c("","NA"),
+                            colClasses=c("brand"="factor",
+                                          "key"="character",
+                                          "author"="character",
+                                          "date"="character",
+                                          "stars"="numeric",
+                                          "title"="character",
+                                          "helpful_yes"="numeric",
+                                          "helpful_no"="character",
+                                          "text"="character",
+                                          "taste"="numeric",
+                                          "ingredients"="numeric",
+                                          "texture"="character",
+                                          "likes"="character")))
+
+reviewdf$date <- as.Date(reviewdf$date,'%Y-%m-%d')
+
+#Rename taste, ingredients, and texture columns in Ratings df. These are also integer 5 point ratings.
+reviewdf <- reviewdf %>% 
+  rename(
+     taste_rating = taste,
+     ingredients_rating = ingredients,
+     texture_rating = texture 
+    )
+
+head(reviewdf)
+```
+
+
+```{r ingredientparse}
+
+#Derive list of ingredients by decomposing roughly comma delimited ingredient list field
+productingredients <- unique(unlist(strsplit(prodcombdf$ingredients, ",")))
+
+#The output is somewhat dirty, trim leading whitespace
+productingredients <- sapply(productingredients,trimws,USE.NAMES = FALSE)
+
+productingredients <- str_sort(productingredients)
+productingredients <- gsub('†',"",productingredients)
+
+productingredients<-unique(productingredients)
+
+ingredientprocessingdict2 <-filter(ingredientprocessingdict, to_ingredient != "")
+
+prodcombdf$ingredients <- stri_replace_all_fixed(prodcombdf$ingredients,
+                                  pattern=ingredientprocessingdict2$from_ingredient,
+                                  replacement=ingredientprocessingdict2$to_ingredient,
+                                  vectorize=FALSE)
+
+# extract list of ingredients
+# for (i in 1:length(productingredients)) {
+#   print(productingredients[i])
+# } 
+
+```
+
+```{r indicator regex}
+
+
+prodcombdf$HAS_VANILLA <- as.factor(as.integer(grepl(pattern = "VANILLA", x = prodcombdf$ingredients)))
+prodcombdf$HAS_ORGANIC <- as.factor(as.integer(grepl(pattern = "ORGANIC", x = prodcombdf$ingredients)))
+prodcombdf$HAS_CARAMEL <- as.factor(as.integer(grepl(pattern = "CARAMEL", x = prodcombdf$ingredients)))
+
+fruitvec <- c("RASPBERR","CHERR","BLUEBERR","BANANA")
+prodcombdf$HAS_FRUIT <- as.factor(as.integer(grepl(pattern=paste(fruitvec,collapse="|"), x=prodcombdf$ingredients)))
+
+chocvec <- c("CHOCOLAT","COCO")
+prodcombdf$HAS_CHOCOLATE <- as.factor(as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=prodcombdf$ingredients)))
+
+prodcombdf$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = prodcombdf$name) | 
+                                grepl(pattern = "BAR", x = prodcombdf$subhead)))
+
+```
+
+
+
+
+```{r joinproductreview}
+#join product indicators to reviews dataset
+productreview <- left_join(reviewdf,
+                           prodcombdf %>% select(key,
+                                                 HAS_CARAMEL,
+                                                 HAS_CHOCOLATE,
+                                                 HAS_FRUIT,
+                                                 HAS_VANILLA,
+                                                 HAS_ORGANIC,
+                                                 IS_BAR),
+                           by="key", multiple="all")
+
+head(productreview)
+```
+
+```{r brandratinghist}
+#https://stackoverflow.com/questions/62558271/r-plotly-histogram-hover-text
+#bucket breaks
+bin_limits <- c(0,seq(0.5, 5.0, by = 1.0),5.0)
+
+bin_ctr <- (bin_limits[-1] + bin_limits[-length(bin_limits)])/2
+bin_wdt <- (bin_limits[-1] - bin_limits[-length(bin_limits)])
+
+ggplot(bin_prop, aes(x=bin_ctr, y=props, width=bin_wdt)) + 
+  geom_bar(stat="identity", position="identity", 
+           fill = "dodgerblue4", color = "white")
+
+
+ggplot(productreview, aes(stars, fill = brand)) +
+  stat_bin(breaks = bin_limits, closed = "left") +
+  stat_bin(breaks = bin_limits, closed = "left", geom = "text", mapping = aes(stars, label = ..count..), inherit.aes = FALSE, vjust = -.5) +
+  theme_light()
+
+ggplotly()
+
+# 
+# plot_histogram <- function(df, feature, plotTitle = "") {
+#   plt <- ggplot(df, aes(x=eval(parse(text=feature)))) +
+#     geom_histogram(aes(y = after_stat(density)), alpha=0.7, fill="#33AADE", color="black") +
+#     geom_density(alpha=0.3, fill="red") +
+#     geom_vline(aes(xintercept=mean(eval(parse(text=feature)), na.rm = T)), color="black", linetype="dashed", size=1) +
+#     labs(title = plotTitle, x=feature, y = "Density") 
+#   print(plt)
+# }
+# 
+#   #plt <- ggplot(df, aes(x=eval(parse(text=feature)), fill=eval(parse(text=label_column)))) +
+# plot_multi_histogram <- function(df, feature, label_column, plotTitle = "") {
+#   plt <- ggplot(df, aes(x=bin_ctr , width=bin_wdt, fill=eval(parse(text=label_column)))) +    
+#     geom_histogram(alpha=0.7, position="identity", aes(y = after_stat(density)), color="black") +
+#     geom_density(alpha=0.7) +
+#     geom_vline(aes(xintercept=mean(eval(parse(text=feature)), na.rm = T)), color="black", linetype="dashed", size=1) +
+#     labs(title = plotTitle, x=feature, y = "Density")
+#   plt + guides(fill=guide_legend(title=label_column))
+# }
+# 
+# 
+# 
+# # a simple histogram
+# plot_histogram(penguins, "body_mass_g")
+# 
+# 
+# # a overlaid histograms
+# plot_multi_histogram(productreview, "stars", "brand")
+
+```
+
+
+```{r ratingbarchart}
+# plot <- ggplot(data = productreview, aes(x = stars))
+# plot +
+#   geom_bar(stat="identity")
+# 
+# 
+# p <- ggplot(productreview, aes(x=stars, y=stars, fill=brand)) + 
+#   geom_violin() + coord_flip()
+# p
+# 
+# midpoints <- c(.5,1,2,3,4,4.5,5)
+# 
+# 
+# ggplot(data = productreview, aes (x = stars, y = counts)) + 
+#   geom_col() +
+#   scale_y_continuous(
+#     breaks = extended_breaks(Q = c(1, 5, 2, 4, 3))
+#   )
+
+
+ggplot(data = productreview, aes (x = stars, color=brand, fill = brand)) + 
+  geom_histogram(binwidth=1,boundary=-.5) +
+  labs(title="Distribution of Star Ratings \nFor Icecream Brand",
+   x="Star Rating",
+   y="Review Count\n(in Thousands)") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  facet_grid(brand ~ .) +
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r contingency plot}
+
+brandrating_contingency_table<-table(productreview$brand,productreview$stars, dnn=c("Brand", "Star Rating"))
+
+brandrating_contingency_table
+prop.table(brandrating_contingency_table,margin=1)
+
+mosaicplot(brandrating_contingency_table)
+
+```
+
+```{r seasonalboxplots}
+
+#not super informative
+reviewdf <- reviewdf %>%
+mutate( date = ymd(date),Year = year(date), Month = month(date))
+
+reviewdf$ym <- paste(reviewdf$Year,'-', reviewdf$Month)
+reviewdf$ym <- ym(reviewdf$ym)
+
+yq <- as.yearqtr(as.yearmon(reviewdf$ym, "%Y-%m") + 1/12)
+
+reviewdf$Season <- factor(format(yq, "%q"), levels = 1:4, 
+                labels = c("winter", "spring", "summer", "fall"))
+
+ggplot(reviewdf,aes(Season,stars)) +
+  geom_boxplot(aes(color=brand,fill=brand)) + 
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color) +
+  labs(title="Distribution of Product Average Star Ratings \nFor Icecream Brand In A Season",
+       x="Season",
+       y="Brand Season Average Star Rating") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+
+```
+
+```{r monthlyratingavg}
+
+
+monthlyratingavg <- reviewdf %>%
+  mutate( date = ymd(date),Year = year(date), Month = month(date)) %>%
+  group_by(brand, Year, Month) %>%
+  summarise(avgrating = mean(stars) )
+
+monthlyratingavg$ym <- paste(monthlyratingavg$Year,'-', monthlyratingavg$Month)
+
+monthlyratingavg$ym <- ym(monthlyratingavg$ym)
+
+ggplot(monthlyratingavg, aes(ym, avgrating, group = brand, color = brand, fill=brand)) + 
+  geom_line() +
+  labs(title="Monthly Average Star Rating \nFor Icecream Brand",
+   x="Year-Month",
+   y="Average Rating") + 
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+```{r seasonavgboxplots}
+
+yq <- as.yearqtr(as.yearmon(monthlyratingavg$ym, "%Y-%m") + 1/12)
+monthlyratingavg$Season <- factor(format(yq, "%q"), levels = 1:4, 
+                labels = c("winter", "spring", "summer", "fall"))
+
+ggplot(monthlyratingavg,aes(Season,avgrating)) +
+  geom_boxplot(aes(fill=brand,color=brand)) + 
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color)
+```
+
+```{r chocolateboxplot}
+ggplot(prodcombdf,aes(HAS_CHOCOLATE,rating)) +
+  geom_boxplot(aes(fill=HAS_CHOCOLATE)) + 
+  scale_fill_manual(values=c("grey","chocolate4"))
+
+ggplot(prodcombdf,aes(HAS_FRUIT,rating)) +
+  geom_boxplot(aes(fill=HAS_FRUIT)) + 
+  scale_fill_manual(values=c("grey","deeppink"))
+
+ggplot(prodcombdf,aes(HAS_ORGANIC,rating)) +
+  geom_boxplot(aes(fill=HAS_ORGANIC)) + 
+  scale_fill_manual(values=c("grey","chartreuse3"))
+
+ggplot(prodcombdf,aes(HAS_CARAMEL,rating)) +
+  geom_boxplot(aes(fill=HAS_CARAMEL)) + 
+  scale_fill_manual(values=c("grey","darkgoldenrod4"))
+
+
+#only a single bar identified using current method
+# ggplot(prodcombdf,aes(IS_BAR,rating)) +
+#   geom_boxplot(aes(fill=IS_BAR)) + 
+#   scale_fill_manual(values=c("grey","darksalmon"))
+
+```
+
+
+
+
+```{r indicatormatrix}
+  ingredindicator <- prodcombdf %>% 
+  rownames_to_column(var="row") %>% 
+  separate_rows(ingredients, sep=",") %>% 
+  count(row, ingredients) %>% 
+  spread(ingredients, n, fill = 0)
+
+
+
+
+colnames(ingredindicator) <- sapply(colnames(ingredindicator),trimws,which="both",USE.NAMES = FALSE)
+colnames(ingredindicator)<-make.names(colnames(ingredindicator),unique = TRUE)
+colnames(ingredindicator)
+```
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
