@@ -20,6 +20,20 @@ output:
 # Some of the frequently used functions are loadPkg(), xkabledply(), xkablesummary(), uzscale(), etc.
 # Once installed, load the library.
 library(ezids)
+
+set.seed(20052)
+
+pkg_vector <- c("ggplot2",
+                "gridExtra",
+                "tidyverse",
+                "stringi",
+                "scales",
+                "gridExtra",
+                "lubridate",
+                "zoo",
+                "dplyr")
+
+invisible(lapply(pkg_vector,loadPkg))
 ```
 
 
@@ -40,12 +54,77 @@ options(scientific=T, digits = 3)
 
 Our project uses an Ice Cream dataset that was retrieved from Kaggle from the following website: "https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data". The dataset contains a product and review datasets for 4 brands of ice cream, Ben & Jerry's, Häagen-Dazs, Talenti, and Breyers. For the purposes of this project, we will be using a combined dataset provided by the author that combines all the products and reviews of all brands into their respective csv file.
 
-```{r import_data, echo=FALSE}
-library(dplyr)
+```{r decompress_data, echo=FALSE}
 
-getwd()
-products <- data.frame(read.csv("products.csv", header = TRUE))
-reviews <- data.frame(read.csv("reviews.csv", header = TRUE))
+
+
+projwd <- getwd()
+
+datadir <- "data"
+rawdir <- "raw"
+zipf<- "icecream.zip"
+outf<-"icecream"
+
+zippath <- file.path(projwd, datadir, rawdir, zipf, fsep="/")
+outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/") 
+  
+unzip(zippath,exdir=outpath)
+
+```
+
+```{r load_products}
+
+
+prodcombpath <- file.path(outpath, "combined/products.csv")
+products <- data.frame(read.csv(prodcombpath,
+                            header=TRUE,
+                            sep=",",
+                            quote="\"",
+                            colClasses=c("brand"="factor",
+                                          "key"="character",
+                                          "name"="character",
+                                          "subhead"="character",
+                                          "description"="character",
+                                          "rating"="numeric",
+                                          "rating_count"="numeric",
+                                          "ingredients"="character")))
+
+```
+
+
+
+
+```{r load_reviews}
+
+
+
+
+
+
+
+reviews <- data.frame(read.csv(reviewpath,
+                            header=TRUE,
+                            sep=",",
+                            quote="\"",
+                            na.strings=c("","NA"),
+                            colClasses=c("brand"="factor",
+                                          "key"="character",
+                                          "author"="character",
+                                          "date"="character",
+                                          "stars"="numeric",
+                                          "title"="character",
+                                          "helpful_yes"="numeric",
+                                          "helpful_no"="character",
+                                          "text"="character",
+                                          "taste"="numeric",
+                                          "ingredients"="numeric",
+                                          "texture"="character",
+                                          "likes"="character")))
+
+review$date <- as.Date(reviewdf$date,'%Y-%m-%d')
+
+
+
 
 ice_cream <- inner_join(products, reviews, by="key")
 write.csv(ice_cream, "merged_data.csv", row.names=FALSE)
