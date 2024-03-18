@@ -56,8 +56,6 @@ Our project uses an Ice Cream dataset that was retrieved from Kaggle from the fo
 
 ```{r decompress_data, echo=FALSE}
 
-
-
 projwd <- getwd()
 
 datadir <- "data"
@@ -69,12 +67,9 @@ zippath <- file.path(projwd, datadir, rawdir, zipf, fsep="/")
 outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/") 
   
 unzip(zippath,exdir=outpath)
-
 ```
 
 ```{r load_products}
-
-
 prodcombpath <- file.path(outpath, "combined/products.csv")
 products <- data.frame(read.csv(prodcombpath,
                             header=TRUE,
@@ -88,19 +83,12 @@ products <- data.frame(read.csv(prodcombpath,
                                           "rating"="numeric",
                                           "rating_count"="numeric",
                                           "ingredients"="character")))
-
 ```
 
 
 
 
 ```{r load_reviews}
-
-
-
-
-
-
 
 reviews <- data.frame(read.csv(reviewpath,
                             header=TRUE,
@@ -123,8 +111,25 @@ reviews <- data.frame(read.csv(reviewpath,
 
 review$date <- as.Date(reviewdf$date,'%Y-%m-%d')
 
+```
+
+```{r productindicators}
+products$HAS_VANILLA <- as.factor(as.integer(grepl(pattern = "VANILLA", x = products$ingredients)))
+products$HAS_ORGANIC <- as.factor(as.integer(grepl(pattern = "ORGANIC", x = products$ingredients)))
+products$HAS_CARAMEL <- as.factor(as.integer(grepl(pattern = "CARAMEL", x = products$ingredients)))
+
+fruitvec <- c("RASPBERR","CHERR","BLUEBERR","BANANA")
+products$HAS_FRUIT <- as.factor(as.integer(grepl(pattern=paste(fruitvec,collapse="|"), x=products$ingredients)))
+
+chocvec <- c("CHOCOLAT","COCO")
+products$HAS_CHOCOLATE <- as.factor(as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=products$ingredients)))
+
+products$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = products$name) | 
+                                grepl(pattern = "BAR", x = products$subhead)))
+```
 
 
+```{r joinproductreview}
 
 ice_cream <- inner_join(products, reviews, by="key")
 write.csv(ice_cream, "merged_data.csv", row.names=FALSE)
