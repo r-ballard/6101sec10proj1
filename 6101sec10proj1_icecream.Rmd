@@ -339,10 +339,14 @@ Ben & Jerry's mission for their products is to "make, distribute, and sell the f
 ```{r bjhist}
 bj_data <- subset(products, Brand == "bj")
 
+bjcol <- brandcolordf$color[brandcolordf$brand=="bj"]
+bjfill <- brandcolordf$fill[brandcolordf$brand=="bj"]
+
 ggplot(bj_data, aes(Rating)) +
-  geom_histogram(col='yellow', fill='black', alpha=0.7) +
+  geom_histogram(col=paste(bjcol), fill=paste(bjfill), alpha=0.7) +
   labs(x="Rating", y="Frequency") +
-  labs(title="Ben & Jerry's Product Rating Histogram using `ggplot`")
+  labs(title="Ben & Jerry's Product Rating Histogram using `ggplot`") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -354,12 +358,16 @@ Looking at the graph, it is very similar to the histogram of all four brands com
 The mean of the data above is `r mean.bjratings` and the standard deviation is `r sd.bjratings`
 
 ```{r}
+#Color and fill are inverted here for readability
 ggplot(bj_data, aes(x=ProductID, y=Rating)) +
-  geom_point(col='black', fill='yellow', alpha=0.7) +
+  geom_point(col=paste(bjfill), fill=paste(bjfill), alpha=0.7) +
   labs(x="ProductID", y='Rating') +
   labs(title="Ratings for each individual Ben & Jerry's products") + 
-  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
+Here is a chart depicting average rating for each Ben and Jerry's product. This data could be further parsed to give indication of ingredient contents.
+
 
 ```{r}
 # Finding the highest rated products
@@ -371,7 +379,8 @@ min_rating_index <- which(bj_data$Rating == min(bj_data$Rating))
 min_productname <- bj_data$ProductName[min_rating_index]
 ```
 
-Based from the graph, the highest rated Ben & Jerry's products: `r max_productname`
+Based on the `Rating` data, the highest rated Ben & Jerry's product is a tie between: `r max_productname[0]` and `r max_productname[1]` 
+
 ```{r, echo=FALSE, results='markup'}
 bj7_top <- subset(productreview, ProductID == "7_bj")
 bj7_top_reviews <- bj7_top[, c("Review")]
@@ -413,7 +422,7 @@ mode.bjrating <- names(table(bj_data$Rating))[table(bj_data$Rating) == max(table
 * `Median`: `r median.bjrating`
 * `Mode`: `r mode.bjrating`
 
-The measures of central tendency shows us that the average rating is 4.332, a median rating of 4.6, with a rating of 4.7 appearing often from reviewers. Continuing on the trend from the overall ice cream flavors, the measures of central tendency for Ben & Jerry's data display a left skewed distribution since mean < median < mode. 
+The measures of central tendency shows us that the average rating is `r mean.bjrating`, a median rating of `r median.bjrating`, with a rating of `r mode.bjrating` appearing most often from reviewers. Continuing on the trend from the overall ice cream flavors, the measures of central tendency for Ben & Jerry's data display a left skewed distribution since mean < median < mode. 
 
 #### Measures of Variation
 
@@ -431,7 +440,7 @@ variance.bjrating <- var(bj_data$Rating)
 * `Standard Deviation`: `r sd.bjrating`
 * `Variance`: `r variance.bjrating`
 
-With the Ben & Jerry's dataset, the data ranges 3.20 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.443 points away from the mean. The standard deviation shows us that the data is dispersed 0.60 points in relation to the mean. The variance shows that each data point is about 0.36 points away from the mean and other data points in the dataset.
+With the Ben & Jerry's dataset, the data ranges `r range.bjrating[2] - range.bjrating[1]` data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about `r md.bjrating` points away from the mean. The standard deviation shows us that the data is dispersed `r sd.bjrating` points in relation to the mean. The variance shows that each data point is about `r variance.bjrating` points away from the mean and other data points in the dataset.
 
 ### Häagen-Dazs
 
@@ -440,10 +449,14 @@ Since 1960, Häagen Dazs kept their mission simple, "source the finest ingredien
 ```{r}
 hd_data <- subset(products, Brand == "hd")
 
+hdcol <- brandcolordf$color[brandcolordf$brand=="hd"]
+hdfill <-brandcolordf$fill[brandcolordf$brand=="hd"]
+
 ggplot(hd_data, aes(Rating)) +
-  geom_histogram(col='brown', fill='tan', alpha=0.7) +
+  geom_histogram(col=paste(hdcol), fill=paste(hdfill), alpha=0.7) +
   labs(x="Rating", y="Frequency") +
-  labs(title="Häagen-Dazs' Product Rating Histogram using `ggplot`")
+  labs(title="Haagen-Dazs' Product Rating Histogram using `ggplot`") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -456,10 +469,11 @@ The mean of the data above is `r mean.hdratings` and the standard deviation is `
 
 ```{r}
 ggplot(hd_data, aes(x=ProductID, y=Rating)) +
-  geom_point(col='tan', fill='brown', alpha=0.7) +
+  geom_point(col=paste(hdcol), fill=paste(hdfill), alpha=0.7) +
   labs(x="ProductID", y='Rating') +
-  labs(title="Ratings for each individual Häagen-Dazs products") + 
-  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+  labs(title="Ratings for each individual Haagen-Dazs products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -536,7 +550,7 @@ mode.hdrating <- names(table(hd_data$Rating))[table(hd_data$Rating) == max(table
 * `Median`: `r median.hdrating`
 * `Mode`: `r mode.hdrating`
 
-The measures of central tendency shows us that the average rating is 4.307, a median rating of 4.5, and with the ratings of 4.6 and 4.8 being awarded the most often by reviewers. These values also prove that the data displays a left skewed distribution.
+The measures of central tendency shows us that the average rating is `r mean.hdrating`, a median rating of `r median.hdrating`, and with the ratings of `r mode.hdrating[1]` and `r mode.hdrating[2]` tied for being awarded the most often by reviewers. These values also show that the data displays a left skewed distribution.
 
 #### Measures of Variation
 
@@ -554,7 +568,7 @@ variance.hdrating <- var(hd_data$Rating)
 * `Standard Deviation`: `r sd.hdrating`
 * `Variance`: `r variance.hdrating`
 
-With the Häagen-Dazs dataset, the data ranges 2.5 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.446 points away from the mean. The standard deviation shosw us that the data is dispersed 0.597 points in relation to the mean. The variance shows that each data point is about 0.357 points away from the mean and other data points in the dataset.
+With the Häagen-Dazs dataset, the data ranges `r range.hdrating[2] - range.hdrating[1]` data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about `r md.hdrating` points away from the mean. The standard deviation shosw us that the data is dispersed `r sd.hdrating` points in relation to the mean. The variance shows that each data point is about `r variance.hdrating` points away from the mean and other data points in the dataset.
 
 ### Talenti
 
@@ -563,10 +577,14 @@ Talenti strives to "travel the world over to source the highest quality ingredie
 ```{r}
 talenti_data <- subset(products, Brand == "talenti")
 
+talcol <- brandcolordf$color[brandcolordf$brand=="talenti"]
+talfill <-brandcolordf$fill[brandcolordf$brand=="talenti"]
+
 ggplot(talenti_data, aes(Rating)) +
-  geom_histogram(col='brown', fill='white', alpha=0.7) +
+  geom_histogram(col=paste(talcol), fill=paste(talfill), alpha=0.7) +
   labs(x="Rating", y="Frequency") +
-  labs(title="Talenti's Product Rating Histogram using `ggplot`")
+  labs(title="Talenti's Product Rating Histogram using `ggplot`") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -574,15 +592,16 @@ mean.talratings <- mean(talenti_data$Rating)
 sd.talratings <- sd(talenti_data$Rating)
 ```
 
-From the graph, we can see that there are not that much products within the Talenti brand. Despite this, the graph displays a left-skewed distribution as well.
+From the graph, we can see that there are not as many products within the Talenti brand when compared to the other brands. We can also the graph displays a left-skewed distribution.
 The mean of the data above is `r mean.talratings` and the standard deviation is `r sd.talratings`
 
 ```{r}
 ggplot(talenti_data, aes(x=ProductID, y=Rating)) +
-  geom_point(col='brown', fill='white', alpha=0.7) +
+  geom_point(col=paste(talcol), fill=paste(talfill), alpha=0.7) +
   labs(x="ProductID", y='Rating') +
-  labs(title="Ratings for each individual Talenti products") + 
-  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+  labs(title="Ratings for each Individual Talenti Products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -653,7 +672,7 @@ mode.talrating <- names(table(talenti_data$Rating))[table(talenti_data$Rating) =
 * `Median`: `r median.talrating`
 * `Mode`: `r mode.talrating`
 
-The measures of central tendency show that the average rating is 4.356, a median rating of 4.4, and having a rating of 4.7 awarded the most. Like the other brands, a left skewed distribution is displayed from the data.
+The measures of central tendency show that the average rating is `r mean.talrating`, a median rating of `r median.talrating`, and having a rating of `r mode.talrating` awarded the most. Like the other brands, a left skewed distribution is displayed from the data.
 
 #### Measures of Variation
 
@@ -671,7 +690,7 @@ variance.talrating <- var(talenti_data$Rating)
 * `Standard Deviation`: `r sd.talrating`
 * `Variance`: `r variance.talrating`
 
-With the Talenti dataset, the data ranges 2 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.28 points away from the mean. The standard deviation shosw us that the data is dispersed 0.387 points in relation to the mean. The variance shows that each data point is about 0.15 points away from the mean and other data points in the dataset.
+With the Talenti dataset, the data ranges `r range.talrating[2] - range.talrating[1] ` data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about `r md.talrating` points away from the mean. The standard deviation shosw us that the data is dispersed `r sd.talrating` points in relation to the mean. The variance shows that each data point is about `r variance.talrating` points away from the mean and other data points in the dataset.
 
 ### Breyers
 
@@ -680,10 +699,14 @@ Breyers is committed on using high quality ingredients. Breyers "start with high
 ```{r}
 breyers_data <- subset(products, Brand == "breyers")
 
+breycol <- brandcolordf$color[brandcolordf$brand=="breyers"]
+breyfill <-brandcolordf$fill[brandcolordf$brand=="breyers"]
+
 ggplot(breyers_data, aes(Rating)) +
-  geom_histogram(col='white', fill='darkgreen', alpha=0.7) +
+  geom_histogram(col=breycol, fill=breyfill, alpha=0.7) +
   labs(x="Rating", y="Frequency") +
-  labs(title="Breyers' Product Rating Histogram using `ggplot`")
+  labs(title="Breyers' Product Rating Histogram using `ggplot`") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -695,11 +718,13 @@ From the graph, the breyers data is similar to the histogram of Ben & Jerry's an
 The mean of the data above is `r mean.breyratings` and the standard deviation is `r sd.breyratings`
 
 ```{r}
+#color and fill are inverted here for readability
 ggplot(breyers_data, aes(x=ProductID, y=Rating)) +
-  geom_point(col='darkgreen', fill='white', alpha=0.7) +
+  geom_point(col=breyfill, fill=breycol, alpha=0.7) +
   labs(x="ProductID", y='Rating') +
   labs(title="Ratings for each individual Breyers products") + 
-  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -746,7 +771,7 @@ mode.breyrating <- names(table(breyers_data$Rating))[table(breyers_data$Rating) 
 * `Median`: `r median.breyrating`
 * `Mode`: `r mode.breyrating`
 
-The measures of central tendency show that the average rating is 3.962, the median rating is 4.2, with a score of 4.4 appearing most often. Again like the other brands, these values prove that the data displays a left skewed distribution.
+The measures of central tendency show that the average rating is `r mean.breyrating`, the median rating is `r median.breyrating`, with a score of `r mode.breyrating` appearing most often. Again like the other brands, these values prove that the data displays a left skewed distribution.
 
 #### Measures of Variation
 
@@ -764,7 +789,7 @@ variance.breyrating <- var(breyers_data$Rating)
 * `Standard Deviation`: `r sd.breyrating`
 * `Variance`: `r variance.breyrating`
 
-With the Breyers dataset, the data ranges 3.80 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.544 points away from the mean. The standard deviation shosw us that the data is dispersed 0.711 points in relation to the mean. The variance shows that each data point is about 0.506 points away from the mean and other data points in the dataset.
+With the Breyers dataset, the data ranges `r range.breyrating[2] - range.breyrating[1]` data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about `r md.breyrating` points away from the mean. The standard deviation shows us that the data is dispersed `r sd.breyrating` points in relation to the mean. The variance shows that each data point is about `r variance.breyrating` points away from the mean and other data points in the dataset.
 
 
 ## EDA Conclusion
