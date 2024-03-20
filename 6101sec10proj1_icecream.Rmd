@@ -67,13 +67,11 @@ zippath <- file.path(projwd, datadir, rawdir, zipf, fsep="/")
 outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/") 
  
 #TODO, remove comment. This unzip is necessary but slows down knit operation 
-#unzip(zippath,exdir=outpath)
+unzip(zippath,exdir=outpath)
 ```
-
-
+The above chunk abstracts the filepath of the raw `icecream.zip` compressed directory to `data/raw/icecream.zip` within the working directory, which is presumed to be the top level of the repo. The .zip is extracted
 
 ```{r load colorbrew}
-```{r loadcolordf}
 brandcolorpath <- file.path(projwd, datadir, "processing/brandcolors.csv")
 brandcolordf <- data.frame(read.csv(brandcolorpath,
                            header=TRUE,
@@ -83,7 +81,9 @@ brandcolordf <- data.frame(read.csv(brandcolorpath,
                                         "color"="character",
                                         "fill"="character")))
 
+brandcolordf
 ```
+A metadata table containing color choices for the different brands has been created, this abstraction can be used for setting colors in the subsequent visualizations for standardizaiton and ease of implementation. 
 
 
 ```{r load_products}
@@ -186,6 +186,13 @@ products$HAS_CHOCOLATE <- as.factor(as.integer(grepl(pattern=paste(chocvec,colla
 products$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = products$ProductName) | 
                                 grepl(pattern = "BAR", x = products$Subhead)))
 ```
+Using `grepl` we are able to implement regex matching to create additional binary indicator fields for ingredients in the `products` dataframe. 
+
+The additional fields:
+* __HAS_VANILLA__ - `products` records with the string `VANILLA` in their `Ingredients` field
+* __HAS_ORGANIC__ - `products` records with the string `ORGANIC` in their `Ingredients` field
+* __HAS_CARAMEL__ - `products` records with the string `VANILLA` in their `Ingredients` field
+
 
 ```{r joinproductreview}
 
