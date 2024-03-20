@@ -67,7 +67,7 @@ zippath <- file.path(projwd, datadir, rawdir, zipf, fsep="/")
 outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/") 
  
 #TODO, remove comment. This unzip is necessary but slows down knit operation 
-unzip(zippath,exdir=outpath)
+#unzip(zippath,exdir=outpath)
 ```
 The above chunk abstracts the filepath of the raw `icecream.zip` compressed directory to `data/raw/icecream.zip` within the working directory, which is presumed to be the top level of the repo. The .zip is extracted
 
@@ -189,10 +189,14 @@ products$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = products$Prod
 Using `grepl` we are able to implement regex matching to create additional binary indicator fields for ingredients in the `products` dataframe. 
 
 The additional fields:
-* __HAS_VANILLA__ - `products` records with the string `VANILLA` in their `Ingredients` field
-* __HAS_ORGANIC__ - `products` records with the string `ORGANIC` in their `Ingredients` field
-* __HAS_CARAMEL__ - `products` records with the string `VANILLA` in their `Ingredients` field
 
+* __HAS_VANILLA__ - `products` records with the substring `VANILLA` in their `Ingredients` field
+* __HAS_ORGANIC__ - `products` records with the substring `ORGANIC` in their `Ingredients` field
+* __HAS_CARAMEL__ - `products` records with the substring `VANILLA` in their `Ingredients` field
+* __HAS_FRUIT__ - `products` records with the substrings `RASPBERR`,`CHERR`,`BLUEBERR`, or `BANANA` in their `Ingredients` field
+* __HAS_CHOCOLATE__ - `products` records with the substrings `CHOCOLAT`or `COCO` in their `Ingredients` field
+
+This categorization and string parsing would be a key part of any clustering analysis performed on the data and there is much to be gleaned from additional analysis on the `Ingredients` field, though this is beyond the scope of this report.
 
 ```{r joinproductreview}
 
@@ -205,9 +209,6 @@ productreview <- left_join(reviews,
                                                  HAS_ORGANIC,
                                                  IS_BAR),
                            by="ProductID", multiple="all")
-
-#TODO: DELETE, write statement, don't need to write raw
-#write.csv(productreview, "merged_data.csv", row.names=FALSE)
 ```
 
 ```{r results='markup'}
@@ -226,7 +227,8 @@ library(ggplot2)
 ggplot(data=products, aes(Rating)) +
   geom_histogram(col='blue', fill='lightblue', alpha=0.7) +
     labs(x="Rating", y="Frequency") +
-    labs(title="Ice Cream Product Rating Histogram using `ggplot`")
+    labs(title="Ice Cream Product Rating Histogram using `ggplot`") +
+    theme(plot.title = element_text(hjust = 0.5))
 ```
 
 This histogram shows the overall ratings of all ice-cream products across all 4 brands of ice-cream. We can see that there is a high frequency of ratings within the 4 - 5 star range. Based on the histogram above, we can see a left skewed distribution. To further test the skewness, we will perform a QQ plot.
@@ -283,6 +285,7 @@ range.rating <- range(products$Rating)
 md.rating <- mean(abs(products$Rating - mean.rating))
 sd.rating <- sd(products$Rating)
 variance.rating <- var(products$Rating)
+
 ```
 
 * `Range`: `r range.rating`
@@ -290,14 +293,14 @@ variance.rating <- var(products$Rating)
 * `Standard Deviation`: `r sd.rating`
 * `Variance`: `r variance.rating`
 
-With the dataset, we are given data that ranges between 3.8 ratings points between the lowest rating and the highest rating. The mean deviation shows us that on average, each value in the dataset is about 0.46 away from the mean. The standard deviation shows us that the data is dispersed 0.62 points in relation to the mean. The variance shows that each data point is about 0.385 points away from the mean and other data points in the dataset.
+With the dataset, we are given data that ranges between `r range.rating[2] - range.rating[1]` ratings points between the lowest rating and the highest rating. The mean deviation shows us that on average, each value in the dataset is about `r mean(abs(products$Rating - mean.rating))` away from the mean. The standard deviation shows us that the data is dispersed `r (products$Rating)` points in relation to the mean. The variance shows that each data point is about `r var(products$Rating)` points away from the mean and other data points in the dataset.
 
 ```{r}
 z4rating <- (4 - mean.ratings)/sd.ratings
 ```
 We will generate a z-score for a rating of 4 in our distribution.
 
-By taking the value of 4 and subtracting it with the mean 4.223 and dividing everything by the standard deviation of 0.62, we get the z score of `r z4rating`.
+By taking the value of 4 and subtracting it with the mean `r mean.ratings` and dividing everything by the standard deviation of `r sd(products$Rating)`, we get the z score of `r z4rating`.
 
 Based on this result, we can determine that a rating of 4 lays within the range of the mean and one standard deviation to the left in our distribution.
 
@@ -305,12 +308,27 @@ Based on this result, we can determine that a rating of 4 lays within the range 
 pnorm.rating <- pnorm(z4rating)
 ```
 
-By taking the `pnorm()` function, `r pnorm.rating` is the probability that a rating of 4 is under the distribution.
+By taking the `pnorm()` function, `r pnorm.rating` is the probability that a rating of `4` is under the distribution.
 
 ```{r, message=FALSE, warning=FALSE, results='markup'}
 loadPkg("Hmisc")
 describe(products$Rating)
 ```
+
+```{r ratingpanelhist}
+ggplot(data = productreview, aes (x = Stars, color=Brand, fill = Brand)) + 
+  geom_histogram(binwidth=1,boundary=-.5) +
+  labs(title="Distribution of Star Ratings \nFor Icecream Brand",
+   x="Star Rating",
+   y="Review Count\n(in Thousands)") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  facet_grid(Brand ~ .) +
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+A faceted histogram of star ratings for each brand.
+
 
 Describe the overall data by using the the `describe()` function to highlight the ratings column.
 
@@ -318,7 +336,7 @@ Describe the overall data by using the the `describe()` function to highlight th
 
 Ben & Jerry's mission for their products is to "make, distribute, and sell the finest-quality ice cream and euphoric concoctions with a continued commitment to incorporating wholesome, natural ingredients and promoting business practices that respect the Earth and the Environment" ("Our Values, Activism, and Mission", n.d.)
 
-```{r}
+```{r bjhist}
 bj_data <- subset(products, Brand == "bj")
 
 ggplot(bj_data, aes(Rating)) +
