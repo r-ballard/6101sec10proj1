@@ -31,7 +31,8 @@ pkg_vector <- c("ggplot2",
                 "gridExtra",
                 "lubridate",
                 "zoo",
-                "dplyr")
+                "dplyr",
+                "DescTools")
 
 invisible(lapply(pkg_vector,loadPkg))
 ```
@@ -211,7 +212,7 @@ productreview <- left_join(reviews,
                            by="ProductID", multiple="all")
 ```
 
-```{r kablesummaries results='markup'}
+```{r kablesummaries, results='markup'}
 xkablesummary(products, title = "Summary of the products dataset")
 xkablesummary(reviews, title = "Summary of the reviews dataset")
 ```
@@ -329,6 +330,7 @@ ggplot(data = productreview, aes (x = Stars, color=Brand, fill = Brand)) +
   scale_colour_manual(values=brandcolordf$color) +
   theme(plot.title = element_text(hjust = 0.5))
 ```
+
 A faceted histogram of star ratings for product reviews. We can observe that the data is as described in the brief and highly clustered around 5's.
 
 
@@ -341,6 +343,7 @@ prop.table(brandrating_contingency_table,margin=1)
 
 mosaicplot(brandrating_contingency_table)
 ```
+
 Above is the contingency table for the brand product-reviews. We can see that the proportions are as described in the histogram, largely 5's for all brands. Interestingly, Breyer's appears to have a larger proportion of 1's than the other groups.
 
 ### Ben & Jerry's
@@ -826,11 +829,11 @@ From the information above we can determine the following
 chocvio <- ggplot(productreview,aes(HAS_CHOCOLATE,Stars)) +
   geom_violin(aes(fill=HAS_CHOCOLATE)) + 
   scale_fill_manual(values=c("grey","chocolate4")) +
-    labs(title="Distribution of Ratings For Icecreams \nBy Contains Chocolate Indicator",
+    labs(title="Distn of Ratings For Icecreams \nBy Contains Chocolate Indicator",
        x="Contains Chocolate",
        y="Rating") +
     theme(plot.title = element_text(hjust = 0.5)) +
-    guides(fill=guide_legend(title="chocolate ind."))
+    guides(fill=guide_legend(title="chocolate"))
 
 fruitvio <- ggplot(productreview,aes(HAS_FRUIT,Stars)) +
   geom_violin(aes(fill=HAS_FRUIT)) + 
@@ -839,7 +842,7 @@ fruitvio <- ggplot(productreview,aes(HAS_FRUIT,Stars)) +
        x="Contains Fruit",
        y="Rating") +
     theme(plot.title = element_text(hjust = 0.5)) +
-    guides(fill=guide_legend(title="fruit ind."))
+    guides(fill=guide_legend(title="fruit"))
 
 organicvio <- ggplot(productreview,aes(HAS_ORGANIC,Stars)) +
   geom_violin(aes(fill=HAS_ORGANIC)) + 
@@ -848,7 +851,7 @@ organicvio <- ggplot(productreview,aes(HAS_ORGANIC,Stars)) +
        x="Contains Organic",
        y="Rating") +
     theme(plot.title = element_text(hjust = 0.5)) +
-    guides(fill=guide_legend(title="organic ind."))
+    guides(fill=guide_legend(title="organic"))
 
 caramelvio <- ggplot(productreview,aes(HAS_CARAMEL,Stars)) +
   geom_violin(aes(fill=HAS_CARAMEL)) + 
@@ -857,13 +860,14 @@ caramelvio <- ggplot(productreview,aes(HAS_CARAMEL,Stars)) +
        x="Contains Caramel",
        y="Rating") +
     theme(plot.title = element_text(hjust = 0.5)) +
-    guides(fill=guide_legend(title="caramel ind."))
+    guides(fill=guide_legend(title="caramel"))
 
 grid.arrange(chocvio, fruitvio,
              organicvio, caramelvio,
              nrow=2)
 
 ```
+
 Above we are able to observe the distributions of product reviews grouped by the ingredient indicators that were prepared earlier.
 
 ```{r ingredientcontingencies}
@@ -884,20 +888,72 @@ caramelmoplot<- mosaicplot(prop.table(caramel_contingency_table,margin=1),
                         main="Caramel Indicator Rating Mosaic Plot")
 
 ```
-Above are mosaic plots for proportions of star ratings for each ingredient indicator in the product-review data.
-Now that we have conducted various exploratory analysis, there are a handful of hypotheses we would like to resolve by applying statistical testing to the dataset.
 
-```{r ingredientanova}
-chisq.test(choc_contingency_table)
-chisq.test(fruit_contingency_table)
-chisq.test(organic_contingency_table)
-chisq.test(caramel_contingency_table)
+Above are mosaic plots for proportions of star ratings for each ingredient indicator in the product-review data. These plots yield some interesting insights into proportions of ratings for groups which contain or do not contain certain ingredients.
+
+These apparent differences warrant additional statistical testing.
+
+```{r ingredientchisq}
+choc_chisq <- chisq.test(choc_contingency_table)
+fruit_chisq <- chisq.test(fruit_contingency_table)
+org_chisq <- chisq.test(organic_contingency_table)
+caramel_chisq <-chisq.test(caramel_contingency_table)
 ```
 We review the above results from the Chi-Squared independence tests for our ingredient indicators:
-* __HAS_CHOCOLATE__ - The Chi-Squared test yields a p-value of `r chisq.test(choc_contingency_table["p.value"]`, thus with 95% confidence we reject the null hypothesis that star rating is independent of `chocolate` ingredient content in the icecreams.
-* __HAS_FRUIT__ - The Chi-Squared test yields a p-value of `r chisq.test(fruit_contingency_table["p.value"]`, thus with 95% confidence we reject the null hypothesis that star rating is independent of `fruit` ingredient content in the icecreams.
-* __HAS_ORGANIC__ - The Chi-Squared test yields a p-value of `r chisq.test(organic_contingency_table["p.value"]`, thus with 95% confidence we fail to reject the null hypothesis that star rating is independent of `organic` ingredient content in the icecreams.
-* __HAS_CARAMEL__ - The Chi-Squared test yields a p-value of `r chisq.test(fruit_contingency_table["p.value"]`, thus with 95% confidence we reject the null hypothesis that star rating is independent of `caramel` ingredient content in the icecreams.
+
+* __HAS_CHOCOLATE__ - The Chi-Squared test yields a p-value of `r chisq.test(choc_contingency_table)$p.value`, thus with 95% confidence we reject the null hypothesis that star rating is independent of `chocolate` ingredient content in the icecreams.
+* __HAS_FRUIT__ - The Chi-Squared test yields a p-value of `r chisq.test(fruit_contingency_table)$p.value`, thus with 95% confidence we reject the null hypothesis that star rating is independent of `fruit` ingredient content in the icecreams.
+* __HAS_ORGANIC__ - The Chi-Squared test yields a p-value of `r chisq.test(organic_contingency_table)$p.value`, thus with 95% confidence we fail to reject the null hypothesis that star rating is independent of `organic` ingredient content in the icecreams.
+* __HAS_CARAMEL__ - The Chi-Squared test yields a p-value of `r chisq.test(fruit_contingency_table)$p.value`, thus with 95% confidence we reject the null hypothesis that star rating is independent of `caramel` ingredient content in the icecreams.
+
+```{r contributiontables, results = 'markup'}
+choc_contrib <- 100*caramel_chisq$residuals^2/caramel_chisq$statistic
+xkabledply(round(choc_contrib, 3))
+
+fruit_contrib <- 100*fruit_chisq$residuals^2/fruit_chisq$statistic
+xkabledply(round(fruit_contrib, 3))
+
+caramel_contrib <- 100*caramel_chisq$residuals^2/caramel_chisq$statistic
+xkabledply(round(caramel_contrib, 3))
+```
+
+
+
+```{r anova}
+anovachoc <- aov(Stars ~ HAS_CHOCOLATE, data=productreview)
+anovachocsummary <- summary(anovachoc)
+tukeyanovachocsummary <- TukeyHSD(anovachoc)
+
+anovafruit <- aov(Stars ~ HAS_FRUIT, data=productreview)
+anovafruitsummary <- summary(anovafruit)
+tukeyanovafruitsummary <- TukeyHSD(anovafruit)
+
+anovaorg <- aov(Stars ~ HAS_ORGANIC, data=productreview)
+anovaorgsummary <- summary(anovaorg)
+tukeyanovaorgsummary <- TukeyHSD(anovaorg)
+
+anovacarm <- aov(Stars ~ HAS_CARAMEL, data=productreview)
+anovacarmsummary <- summary(anovacarm)
+tukeyanovacarmsummary <- TukeyHSD(anovacarm)
+
+
+tukeyanovacarmsummary$HAS_CARAMEL
+tukeyanovacarmsummary$HAS_CARAMEL[1]
+```
+
+
+```{r ingredientcrosstables , results='markup'}
+xkabledply(chisq.test(choc_contingency_table)$expected, title = "Cross table for the expected frequencies between Star Rating vs Has Chocolate")
+
+xkabledply(chisq.test(fruit_contingency_table)$expected, title = "Cross table for the expected frequencies between Star Rating vs Has Fruit")
+
+xkabledply(chisq.test(organic_contingency_table)$expected, title = "Cross table for the expected frequencies between Star Rating vs Has Organic")
+
+xkabledply(chisq.test(caramel_contingency_table)$expected, title = "Cross table for the expected frequencies between Star Rating vs Has Caramel")
+
+
+```
+
 
 
 # References
