@@ -868,9 +868,28 @@ grid.arrange(chocvio, fruitvio,
 
 ```
 
+```{r ingredientcounts}
+choccounts <- count(productreview, HAS_CHOCOLATE)
+fruitcounts <- count(productreview, HAS_FRUIT)
+organiccounts <- count(productreview, HAS_ORGANIC)
+caramelcounts <- count(productreview, HAS_CARAMEL)
+```
+
 Above we are able to observe the distributions of product reviews grouped by the ingredient indicators that were prepared earlier.
 
+1. We can see that the icecream reviews seem to have similarly shaped distributions of ratings for icecreams that do and don't contain chocolate. The same cannot be said for reviews for the other ingredient indicators.
+
+2. Reviews of icecreams containing Fruit, Organic, and Caramel ingredients represent relatively small proportions of the total icecream reviews as is evinced by their smaller violin charts.
+
+* `Choc` -  `r choccounts$HAS_CHOCOLATE[1]`: `r choccounts$n[1]` / `r choccounts$HAS_CHOCOLATE[2]`: `r choccounts$n[2]` 
+* `Fruit` - `r fruitcounts$HAS_FRUIT[1]`: `r fruitcounts$n[1]` / `r fruitcounts$HAS_FRUIT[2]`: `r fruitcounts$n[2]` 
+* `Organic` - `r organiccounts$HAS_ORGANIC[1]`: `r organiccounts$n[1]` / `r organiccounts$HAS_ORGANIC[2]`: `r organiccounts$n[2]` 
+* `Caramel` - `r caramelcounts$HAS_CARAMEL[1]`: `r caramelcounts$n[1]` / `r caramelcounts$HAS_CARAMEL[2]`: `r caramelcounts$n[2]` 
+
 ```{r ingredientcontingencies}
+
+
+
 choc_contingency_table<-table(productreview$HAS_CHOCOLATE,productreview$Stars, dnn=c("HAS_CHOCOLATE", "Star Rating"))
 chocmoplot<- mosaicplot(prop.table(choc_contingency_table,margin=1),
                         main="Chocolate Indicator Rating Mosaic Plot")
@@ -906,55 +925,7 @@ We review the above results from the Chi-Squared independence tests for our ingr
 * __HAS_ORGANIC__ - The Chi-Squared test yields a p-value of `r chisq.test(organic_contingency_table)$p.value`, thus with 95% confidence we fail to reject the null hypothesis that star rating is independent of `organic` ingredient content in the icecreams.
 * __HAS_CARAMEL__ - The Chi-Squared test yields a p-value of `r chisq.test(fruit_contingency_table)$p.value`, thus with 95% confidence we reject the null hypothesis that star rating is independent of `caramel` ingredient content in the icecreams.
 
-```{r contributiontables, results = 'markup'}
-choc_contrib <- 100*caramel_chisq$residuals^2/caramel_chisq$statistic
-xkabledply(round(choc_contrib, 3))
-
-fruit_contrib <- 100*fruit_chisq$residuals^2/fruit_chisq$statistic
-xkabledply(round(fruit_contrib, 3))
-
-caramel_contrib <- 100*caramel_chisq$residuals^2/caramel_chisq$statistic
-xkabledply(round(caramel_contrib, 3))
-```
-
-
-
-```{r anova}
-anovachoc <- aov(Stars ~ HAS_CHOCOLATE, data=productreview)
-anovachocsummary <- summary(anovachoc)
-tukeyanovachocsummary <- TukeyHSD(anovachoc)
-
-anovafruit <- aov(Stars ~ HAS_FRUIT, data=productreview)
-anovafruitsummary <- summary(anovafruit)
-tukeyanovafruitsummary <- TukeyHSD(anovafruit)
-
-anovaorg <- aov(Stars ~ HAS_ORGANIC, data=productreview)
-anovaorgsummary <- summary(anovaorg)
-tukeyanovaorgsummary <- TukeyHSD(anovaorg)
-
-anovacarm <- aov(Stars ~ HAS_CARAMEL, data=productreview)
-anovacarmsummary <- summary(anovacarm)
-tukeyanovacarmsummary <- TukeyHSD(anovacarm)
-
-
-tukeyanovacarmsummary$HAS_CARAMEL
-tukeyanovacarmsummary$HAS_CARAMEL[1]
-```
-
-
-```{r ingredientcrosstables , results='markup'}
-xkabledply(chisq.test(choc_contingency_table)$expected, title = "Cross table for the expected frequencies between Star Rating vs Has Chocolate")
-
-xkabledply(chisq.test(fruit_contingency_table)$expected, title = "Cross table for the expected frequencies between Star Rating vs Has Fruit")
-
-xkabledply(chisq.test(organic_contingency_table)$expected, title = "Cross table for the expected frequencies between Star Rating vs Has Organic")
-
-xkabledply(chisq.test(caramel_contingency_table)$expected, title = "Cross table for the expected frequencies between Star Rating vs Has Caramel")
-
-
-```
-
-
+With these results in mind we can say with high confidence that for the above ingredient groupings  star rating is not independent of ingredient content (organic ingredients being a notable exception)
 
 # References
 
