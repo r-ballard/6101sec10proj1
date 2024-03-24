@@ -31,7 +31,8 @@ pkg_vector <- c("ggplot2",
                 "gridExtra",
                 "lubridate",
                 "zoo",
-                "dplyr")
+                "dplyr",
+                "DescTools")
 
 invisible(lapply(pkg_vector,loadPkg))
 ```
@@ -69,11 +70,9 @@ outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/")
 #TODO, remove comment. This unzip is necessary but slows down knit operation 
 #unzip(zippath,exdir=outpath)
 ```
-
-
+The above chunk abstracts the filepath of the raw `icecream.zip` compressed directory to `data/raw/icecream.zip` within the working directory, which is presumed to be the top level of the repo. The .zip is extracted
 
 ```{r load colorbrew}
-```{r loadcolordf}
 brandcolorpath <- file.path(projwd, datadir, "processing/brandcolors.csv")
 brandcolordf <- data.frame(read.csv(brandcolorpath,
                            header=TRUE,
@@ -83,7 +82,9 @@ brandcolordf <- data.frame(read.csv(brandcolorpath,
                                         "color"="character",
                                         "fill"="character")))
 
+brandcolordf
 ```
+A metadata table containing color choices for the different brands has been created, this abstraction can be used for setting colors in the subsequent visualizations for standardizaiton and ease of implementation. 
 
 
 ```{r load_products}
@@ -186,6 +187,17 @@ products$HAS_CHOCOLATE <- as.factor(as.integer(grepl(pattern=paste(chocvec,colla
 products$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = products$ProductName) | 
                                 grepl(pattern = "BAR", x = products$Subhead)))
 ```
+Using `grepl` we are able to implement regex matching to create additional binary indicator fields for ingredients in the `products` dataframe. 
+
+The additional fields:
+
+* __HAS_VANILLA__ - `products` records with the substring `VANILLA` in their `Ingredients` field
+* __HAS_ORGANIC__ - `products` records with the substring `ORGANIC` in their `Ingredients` field
+* __HAS_CARAMEL__ - `products` records with the substring `VANILLA` in their `Ingredients` field
+* __HAS_FRUIT__ - `products` records with the substrings `RASPBERR`,`CHERR`,`BLUEBERR`, or `BANANA` in their `Ingredients` field
+* __HAS_CHOCOLATE__ - `products` records with the substrings `CHOCOLAT`or `COCO` in their `Ingredients` field
+
+This categorization and string parsing would be a key part of any clustering analysis performed on the data and there is much to be gleaned from additional analysis on the `Ingredients` field, though this is beyond the scope of this report.
 
 ```{r joinproductreview}
 
@@ -198,12 +210,9 @@ productreview <- left_join(reviews,
                                                  HAS_ORGANIC,
                                                  IS_BAR),
                            by="ProductID", multiple="all")
-
-#TODO: DELETE, write statement, don't need to write raw
-#write.csv(productreview, "merged_data.csv", row.names=FALSE)
 ```
 
-```{r results='markup'}
+```{r kablesummaries, results='markup'}
 xkablesummary(products, title = "Summary of the products dataset")
 xkablesummary(reviews, title = "Summary of the reviews dataset")
 ```
@@ -219,7 +228,8 @@ library(ggplot2)
 ggplot(data=products, aes(Rating)) +
   geom_histogram(col='blue', fill='lightblue', alpha=0.7) +
     labs(x="Rating", y="Frequency") +
-    labs(title="Ice Cream Product Rating Histogram using `ggplot`")
+    labs(title="Ice Cream Product Rating Histogram using `ggplot`") +
+    theme(plot.title = element_text(hjust = 0.5))
 ```
 
 This histogram shows the overall ratings of all ice-cream products across all 4 brands of ice-cream. We can see that there is a high frequency of ratings within the 4 - 5 star range. Based on the histogram above, we can see a left skewed distribution. To further test the skewness, we will perform a QQ plot.
@@ -276,6 +286,7 @@ range.rating <- range(products$Rating)
 md.rating <- mean(abs(products$Rating - mean.rating))
 sd.rating <- sd(products$Rating)
 variance.rating <- var(products$Rating)
+
 ```
 
 * `Range`: `r range.rating`
@@ -283,14 +294,14 @@ variance.rating <- var(products$Rating)
 * `Standard Deviation`: `r sd.rating`
 * `Variance`: `r variance.rating`
 
-With the dataset, we are given data that ranges between 3.8 ratings points between the lowest rating and the highest rating. The mean deviation shows us that on average, each value in the dataset is about 0.46 away from the mean. The standard deviation shows us that the data is dispersed 0.62 points in relation to the mean. The variance shows that each data point is about 0.385 points away from the mean and other data points in the dataset.
+With the dataset, we are given data that ranges between `r range.rating[2] - range.rating[1]` ratings points between the lowest rating and the highest rating. The mean deviation shows us that on average, each value in the dataset is about `r mean(abs(products$Rating - mean.rating))` away from the mean. The standard deviation shows us that the data is dispersed `r (products$Rating)` points in relation to the mean. The variance shows that each data point is about `r var(products$Rating)` points away from the mean and other data points in the dataset.
 
 ```{r}
 z4rating <- (4 - mean.ratings)/sd.ratings
 ```
 We will generate a z-score for a rating of 4 in our distribution.
 
-By taking the value of 4 and subtracting it with the mean 4.223 and dividing everything by the standard deviation of 0.62, we get the z score of `r z4rating`.
+By taking the value of 4 and subtracting it with the mean `r mean.ratings` and dividing everything by the standard deviation of `r sd(products$Rating)`, we get the z score of `r z4rating`.
 
 Based on this result, we can determine that a rating of 4 lays within the range of the mean and one standard deviation to the left in our distribution.
 
@@ -298,26 +309,58 @@ Based on this result, we can determine that a rating of 4 lays within the range 
 pnorm.rating <- pnorm(z4rating)
 ```
 
-By taking the `pnorm()` function, `r pnorm.rating` is the probability that a rating of 4 is under the distribution.
+By taking the `pnorm()` function, `r pnorm.rating` is the probability that a rating of `4` is under the distribution.
 
 ```{r, message=FALSE, warning=FALSE, results='markup'}
 loadPkg("Hmisc")
 describe(products$Rating)
 ```
-
 Describe the overall data by using the the `describe()` function to highlight the ratings column.
+
+
+```{r ratingpanelhist}
+ggplot(data = productreview, aes (x = Stars, color=Brand, fill = Brand)) + 
+  geom_histogram(binwidth=1,boundary=-.5) +
+  labs(title="Distribution of Star Ratings \nFor Icecream Brand",
+   x="Star Rating",
+   y="Review Count\n(in Thousands)") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  facet_grid(Brand ~ .) +
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+A faceted histogram of star ratings for product reviews. We can observe that the data is as described in the brief and highly clustered around 5's.
+
+
+```{r contingencyplot}
+
+brandrating_contingency_table<-table(productreview$Brand,productreview$Stars, dnn=c("Brand", "Star Rating"))
+
+brandrating_contingency_table
+prop.table(brandrating_contingency_table,margin=1)
+
+mosaicplot(brandrating_contingency_table)
+```
+
+Above is the contingency table for the brand product-reviews. We can see that the proportions are as described in the histogram, largely 5's for all brands. Interestingly, Breyer's appears to have a larger proportion of 1's than the other groups.
 
 ### Ben & Jerry's
 
 Ben & Jerry's mission for their products is to "make, distribute, and sell the finest-quality ice cream and euphoric concoctions with a continued commitment to incorporating wholesome, natural ingredients and promoting business practices that respect the Earth and the Environment" ("Our Values, Activism, and Mission", n.d.)
 
-```{r}
+```{r bjhist}
 bj_data <- subset(products, Brand == "bj")
 
+bjcol <- brandcolordf$color[brandcolordf$brand=="bj"]
+bjfill <- brandcolordf$fill[brandcolordf$brand=="bj"]
+
 ggplot(bj_data, aes(Rating)) +
-  geom_histogram(col='yellow', fill='black', alpha=0.7) +
+  geom_histogram(col=paste(bjcol), fill=paste(bjfill), alpha=0.7) +
   labs(x="Rating", y="Frequency") +
-  labs(title="Ben & Jerry's Product Rating Histogram using `ggplot`")
+  labs(title="Ben & Jerry's Product Rating Histogram using `ggplot`") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -329,12 +372,16 @@ Looking at the graph, it is very similar to the histogram of all four brands com
 The mean of the data above is `r mean.bjratings` and the standard deviation is `r sd.bjratings`
 
 ```{r}
+#Color and fill are inverted here for readability
 ggplot(bj_data, aes(x=ProductID, y=Rating)) +
-  geom_point(col='black', fill='yellow', alpha=0.7) +
+  geom_point(col=paste(bjfill), fill=paste(bjfill), alpha=0.7) +
   labs(x="ProductID", y='Rating') +
   labs(title="Ratings for each individual Ben & Jerry's products") + 
-  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
+Here is a chart depicting average rating for each Ben and Jerry's product. This data could be further parsed to give indication of ingredient contents.
+
 
 ```{r}
 # Finding the highest rated products
@@ -346,7 +393,8 @@ min_rating_index <- which(bj_data$Rating == min(bj_data$Rating))
 min_productname <- bj_data$ProductName[min_rating_index]
 ```
 
-Based from the graph, the highest rated Ben & Jerry's products: `r max_productname`
+Based on the `Rating` data, the highest rated Ben & Jerry's product is a tie between: `r max_productname[0]` and `r max_productname[1]` 
+
 ```{r, echo=FALSE, results='markup'}
 bj7_top <- subset(productreview, ProductID == "7_bj")
 bj7_top_reviews <- bj7_top[, c("Review")]
@@ -388,7 +436,7 @@ mode.bjrating <- names(table(bj_data$Rating))[table(bj_data$Rating) == max(table
 * `Median`: `r median.bjrating`
 * `Mode`: `r mode.bjrating`
 
-The measures of central tendency shows us that the average rating is 4.332, a median rating of 4.6, with a rating of 4.7 appearing often from reviewers. Continuing on the trend from the overall ice cream flavors, the measures of central tendency for Ben & Jerry's data display a left skewed distribution since mean < median < mode. 
+The measures of central tendency shows us that the average rating is `r mean.bjrating`, a median rating of `r median.bjrating`, with a rating of `r mode.bjrating` appearing most often from reviewers. Continuing on the trend from the overall ice cream flavors, the measures of central tendency for Ben & Jerry's data display a left skewed distribution since mean < median < mode. 
 
 #### Measures of Variation
 
@@ -406,7 +454,7 @@ variance.bjrating <- var(bj_data$Rating)
 * `Standard Deviation`: `r sd.bjrating`
 * `Variance`: `r variance.bjrating`
 
-With the Ben & Jerry's dataset, the data ranges 3.20 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.443 points away from the mean. The standard deviation shows us that the data is dispersed 0.60 points in relation to the mean. The variance shows that each data point is about 0.36 points away from the mean and other data points in the dataset.
+With the Ben & Jerry's dataset, the data ranges `r range.bjrating[2] - range.bjrating[1]` data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about `r md.bjrating` points away from the mean. The standard deviation shows us that the data is dispersed `r sd.bjrating` points in relation to the mean. The variance shows that each data point is about `r variance.bjrating` points away from the mean and other data points in the dataset.
 
 ### Häagen-Dazs
 
@@ -415,10 +463,14 @@ Since 1960, Häagen Dazs kept their mission simple, "source the finest ingredien
 ```{r}
 hd_data <- subset(products, Brand == "hd")
 
+hdcol <- brandcolordf$color[brandcolordf$brand=="hd"]
+hdfill <-brandcolordf$fill[brandcolordf$brand=="hd"]
+
 ggplot(hd_data, aes(Rating)) +
-  geom_histogram(col='brown', fill='tan', alpha=0.7) +
+  geom_histogram(col=paste(hdcol), fill=paste(hdfill), alpha=0.7) +
   labs(x="Rating", y="Frequency") +
-  labs(title="Häagen-Dazs' Product Rating Histogram using `ggplot`")
+  labs(title="Haagen-Dazs' Product Rating Histogram using `ggplot`") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -431,10 +483,11 @@ The mean of the data above is `r mean.hdratings` and the standard deviation is `
 
 ```{r}
 ggplot(hd_data, aes(x=ProductID, y=Rating)) +
-  geom_point(col='tan', fill='brown', alpha=0.7) +
+  geom_point(col=paste(hdcol), fill=paste(hdfill), alpha=0.7) +
   labs(x="ProductID", y='Rating') +
-  labs(title="Ratings for each individual Häagen-Dazs products") + 
-  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+  labs(title="Ratings for each individual Haagen-Dazs products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -511,7 +564,7 @@ mode.hdrating <- names(table(hd_data$Rating))[table(hd_data$Rating) == max(table
 * `Median`: `r median.hdrating`
 * `Mode`: `r mode.hdrating`
 
-The measures of central tendency shows us that the average rating is 4.307, a median rating of 4.5, and with the ratings of 4.6 and 4.8 being awarded the most often by reviewers. These values also prove that the data displays a left skewed distribution.
+The measures of central tendency shows us that the average rating is `r mean.hdrating`, a median rating of `r median.hdrating`, and with the ratings of `r mode.hdrating[1]` and `r mode.hdrating[2]` tied for being awarded the most often by reviewers. These values also show that the data displays a left skewed distribution.
 
 #### Measures of Variation
 
@@ -529,7 +582,7 @@ variance.hdrating <- var(hd_data$Rating)
 * `Standard Deviation`: `r sd.hdrating`
 * `Variance`: `r variance.hdrating`
 
-With the Häagen-Dazs dataset, the data ranges 2.5 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.446 points away from the mean. The standard deviation shosw us that the data is dispersed 0.597 points in relation to the mean. The variance shows that each data point is about 0.357 points away from the mean and other data points in the dataset.
+With the Häagen-Dazs dataset, the data ranges `r range.hdrating[2] - range.hdrating[1]` data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about `r md.hdrating` points away from the mean. The standard deviation shosw us that the data is dispersed `r sd.hdrating` points in relation to the mean. The variance shows that each data point is about `r variance.hdrating` points away from the mean and other data points in the dataset.
 
 ### Talenti
 
@@ -538,10 +591,14 @@ Talenti strives to "travel the world over to source the highest quality ingredie
 ```{r}
 talenti_data <- subset(products, Brand == "talenti")
 
+talcol <- brandcolordf$color[brandcolordf$brand=="talenti"]
+talfill <-brandcolordf$fill[brandcolordf$brand=="talenti"]
+
 ggplot(talenti_data, aes(Rating)) +
-  geom_histogram(col='brown', fill='white', alpha=0.7) +
+  geom_histogram(col=paste(talcol), fill=paste(talfill), alpha=0.7) +
   labs(x="Rating", y="Frequency") +
-  labs(title="Talenti's Product Rating Histogram using `ggplot`")
+  labs(title="Talenti's Product Rating Histogram using `ggplot`") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -549,15 +606,16 @@ mean.talratings <- mean(talenti_data$Rating)
 sd.talratings <- sd(talenti_data$Rating)
 ```
 
-From the graph, we can see that there are not that much products within the Talenti brand. Despite this, the graph displays a left-skewed distribution as well.
+From the graph, we can see that there are not as many products within the Talenti brand when compared to the other brands. We can also the graph displays a left-skewed distribution.
 The mean of the data above is `r mean.talratings` and the standard deviation is `r sd.talratings`
 
 ```{r}
 ggplot(talenti_data, aes(x=ProductID, y=Rating)) +
-  geom_point(col='brown', fill='white', alpha=0.7) +
+  geom_point(col=paste(talcol), fill=paste(talfill), alpha=0.7) +
   labs(x="ProductID", y='Rating') +
-  labs(title="Ratings for each individual Talenti products") + 
-  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+  labs(title="Ratings for each Individual Talenti Products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
@@ -628,7 +686,7 @@ mode.talrating <- names(table(talenti_data$Rating))[table(talenti_data$Rating) =
 * `Median`: `r median.talrating`
 * `Mode`: `r mode.talrating`
 
-The measures of central tendency show that the average rating is 4.356, a median rating of 4.4, and having a rating of 4.7 awarded the most. Like the other brands, a left skewed distribution is displayed from the data.
+The measures of central tendency show that the average rating is `r mean.talrating`, a median rating of `r median.talrating`, and having a rating of `r mode.talrating` awarded the most. Like the other brands, a left skewed distribution is displayed from the data.
 
 #### Measures of Variation
 
@@ -646,22 +704,26 @@ variance.talrating <- var(talenti_data$Rating)
 * `Standard Deviation`: `r sd.talrating`
 * `Variance`: `r variance.talrating`
 
-With the Talenti dataset, the data ranges 2 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.28 points away from the mean. The standard deviation shosw us that the data is dispersed 0.387 points in relation to the mean. The variance shows that each data point is about 0.15 points away from the mean and other data points in the dataset.
+With the Talenti dataset, the data ranges `r range.talrating[2] - range.talrating[1] ` data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about `r md.talrating` points away from the mean. The standard deviation shosw us that the data is dispersed `r sd.talrating` points in relation to the mean. The variance shows that each data point is about `r variance.talrating` points away from the mean and other data points in the dataset.
 
 ### Breyers
 
 Breyers is committed on using high quality ingredients. Breyers "start with high ingredients like colors and flavors from natural sources and sustainably farmed vanilla. [They] partner with American farmers for 100% Grade A milk and cream that comes from cows not treated with artificial growth hormones" ("About Breyers History", n.d.).
  
-```{r}
+```{r breyershist}
 breyers_data <- subset(products, Brand == "breyers")
 
+breycol <- brandcolordf$color[brandcolordf$brand=="breyers"]
+breyfill <-brandcolordf$fill[brandcolordf$brand=="breyers"]
+
 ggplot(breyers_data, aes(Rating)) +
-  geom_histogram(col='white', fill='darkgreen', alpha=0.7) +
+  geom_histogram(col=breycol, fill=breyfill, alpha=0.7) +
   labs(x="Rating", y="Frequency") +
-  labs(title="Breyers' Product Rating Histogram using `ggplot`")
+  labs(title="Breyers' Product Rating Histogram using `ggplot`") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
-```{r}
+```{r breyerssummarystat}
 mean.breyratings <- mean(breyers_data$Rating)
 sd.breyratings <- sd(breyers_data$Rating)
 ```
@@ -669,15 +731,17 @@ sd.breyratings <- sd(breyers_data$Rating)
 From the graph, the breyers data is similar to the histogram of Ben & Jerry's and the combined dataset. The graph also displays a left-skewed distribution.
 The mean of the data above is `r mean.breyratings` and the standard deviation is `r sd.breyratings`
 
-```{r}
+```{r breyersprodratings}
+#color and fill are inverted here for readability
 ggplot(breyers_data, aes(x=ProductID, y=Rating)) +
-  geom_point(col='darkgreen', fill='white', alpha=0.7) +
+  geom_point(col=breyfill, fill=breycol, alpha=0.7) +
   labs(x="ProductID", y='Rating') +
   labs(title="Ratings for each individual Breyers products") + 
-  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5))
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
-```{r}
+```{r breyersextrema}
 # Finding the highest rated products
 max_rating_index <- which(breyers_data$Rating == max(breyers_data$Rating))
 max_productname <- breyers_data$ProductName[max_rating_index]
@@ -721,7 +785,7 @@ mode.breyrating <- names(table(breyers_data$Rating))[table(breyers_data$Rating) 
 * `Median`: `r median.breyrating`
 * `Mode`: `r mode.breyrating`
 
-The measures of central tendency show that the average rating is 3.962, the median rating is 4.2, with a score of 4.4 appearing most often. Again like the other brands, these values prove that the data displays a left skewed distribution.
+The measures of central tendency show that the average rating is `r mean.breyrating`, the median rating is `r median.breyrating`, with a score of `r mode.breyrating` appearing most often. Again like the other brands, these values prove that the data displays a left skewed distribution.
 
 #### Measures of Variation
 
@@ -739,7 +803,7 @@ variance.breyrating <- var(breyers_data$Rating)
 * `Standard Deviation`: `r sd.breyrating`
 * `Variance`: `r variance.breyrating`
 
-With the Breyers dataset, the data ranges 3.80 data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about 0.544 points away from the mean. The standard deviation shosw us that the data is dispersed 0.711 points in relation to the mean. The variance shows that each data point is about 0.506 points away from the mean and other data points in the dataset.
+With the Breyers dataset, the data ranges `r range.breyrating[2] - range.breyrating[1]` data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about `r md.breyrating` points away from the mean. The standard deviation shows us that the data is dispersed `r sd.breyrating` points in relation to the mean. The variance shows that each data point is about `r variance.breyrating` points away from the mean and other data points in the dataset.
 
 
 ## EDA Conclusion
@@ -758,6 +822,110 @@ From the information above we can determine the following
 * All of the brands display a left-skewed distribution.
 * Common complaints are lacking or non-existent toppings, flavors not meeting customers' expectations,
 
+
+# Hypothesis Testing
+### Ingredient Indicators
+```{r ingredientviolinplots}
+chocvio <- ggplot(productreview,aes(HAS_CHOCOLATE,Stars)) +
+  geom_violin(aes(fill=HAS_CHOCOLATE)) + 
+  scale_fill_manual(values=c("grey","chocolate4")) +
+    labs(title="Distn of Ratings For Icecreams \nBy Contains Chocolate Indicator",
+       x="Contains Chocolate",
+       y="Rating") +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    guides(fill=guide_legend(title="chocolate"))
+
+fruitvio <- ggplot(productreview,aes(HAS_FRUIT,Stars)) +
+  geom_violin(aes(fill=HAS_FRUIT)) + 
+  scale_fill_manual(values=c("grey","deeppink")) +
+    labs(title="Distn of Ratings For Icecreams \nBy Contains Fruit Indicator",
+       x="Contains Fruit",
+       y="Rating") +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    guides(fill=guide_legend(title="fruit"))
+
+organicvio <- ggplot(productreview,aes(HAS_ORGANIC,Stars)) +
+  geom_violin(aes(fill=HAS_ORGANIC)) + 
+  scale_fill_manual(values=c("grey","chartreuse3")) +
+    labs(title="Distn of Ratings For Icecreams \nBy Contains Organic Indicator",
+       x="Contains Organic",
+       y="Rating") +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    guides(fill=guide_legend(title="organic"))
+
+caramelvio <- ggplot(productreview,aes(HAS_CARAMEL,Stars)) +
+  geom_violin(aes(fill=HAS_CARAMEL)) + 
+  scale_fill_manual(values=c("grey","darkgoldenrod4")) +
+    labs(title="Distn of Ratings For Icecreams \nBy Contains Caramel Indicator",
+       x="Contains Caramel",
+       y="Rating") +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    guides(fill=guide_legend(title="caramel"))
+
+grid.arrange(chocvio, fruitvio,
+             organicvio, caramelvio,
+             nrow=2)
+
+```
+
+```{r ingredientcounts}
+choccounts <- count(productreview, HAS_CHOCOLATE)
+fruitcounts <- count(productreview, HAS_FRUIT)
+organiccounts <- count(productreview, HAS_ORGANIC)
+caramelcounts <- count(productreview, HAS_CARAMEL)
+```
+
+Above we are able to observe the distributions of product reviews grouped by the ingredient indicators that were prepared earlier.
+
+1. We can see that the icecream reviews seem to have similarly shaped distributions of ratings for icecreams that do and don't contain chocolate. The same cannot be said for reviews for the other ingredient indicators.
+
+2. Reviews of icecreams containing Fruit, Organic, and Caramel ingredients represent relatively small proportions of the total icecream reviews as is evinced by their smaller violin charts.
+
+* `Choc` -  `r choccounts$HAS_CHOCOLATE[1]`: `r choccounts$n[1]` / `r choccounts$HAS_CHOCOLATE[2]`: `r choccounts$n[2]` 
+* `Fruit` - `r fruitcounts$HAS_FRUIT[1]`: `r fruitcounts$n[1]` / `r fruitcounts$HAS_FRUIT[2]`: `r fruitcounts$n[2]` 
+* `Organic` - `r organiccounts$HAS_ORGANIC[1]`: `r organiccounts$n[1]` / `r organiccounts$HAS_ORGANIC[2]`: `r organiccounts$n[2]` 
+* `Caramel` - `r caramelcounts$HAS_CARAMEL[1]`: `r caramelcounts$n[1]` / `r caramelcounts$HAS_CARAMEL[2]`: `r caramelcounts$n[2]` 
+
+```{r ingredientcontingencies}
+
+
+
+choc_contingency_table<-table(productreview$HAS_CHOCOLATE,productreview$Stars, dnn=c("HAS_CHOCOLATE", "Star Rating"))
+chocmoplot<- mosaicplot(prop.table(choc_contingency_table,margin=1),
+                        main="Chocolate Indicator Rating Mosaic Plot")
+
+fruit_contingency_table<-table(productreview$HAS_FRUIT,productreview$Stars, dnn=c("HAS_FRUIT", "Star Rating"))
+fruitmoplot<- mosaicplot(prop.table(fruit_contingency_table,margin=1),
+                        main="Fruit Indicator Rating Mosaic Plot")
+
+organic_contingency_table<-table(productreview$HAS_ORGANIC,productreview$Stars, dnn=c("HAS_ORGANIC", "Star Rating"))
+organicmoplot<- mosaicplot(prop.table(organic_contingency_table,margin=1),
+                        main="Organic Indicator Rating Mosaic Plot")
+
+caramel_contingency_table<-table(productreview$HAS_CARAMEL,productreview$Stars, dnn=c("HAS_CARAMEL", "Star Rating"))
+caramelmoplot<- mosaicplot(prop.table(caramel_contingency_table,margin=1),
+                        main="Caramel Indicator Rating Mosaic Plot")
+
+```
+
+Above are mosaic plots for proportions of star ratings for each ingredient indicator in the product-review data. These plots yield some interesting insights into proportions of ratings for groups which contain or do not contain certain ingredients.
+
+These apparent differences warrant additional statistical testing.
+
+```{r ingredientchisq}
+choc_chisq <- chisq.test(choc_contingency_table)
+fruit_chisq <- chisq.test(fruit_contingency_table)
+org_chisq <- chisq.test(organic_contingency_table)
+caramel_chisq <-chisq.test(caramel_contingency_table)
+```
+We review the above results from the Chi-Squared independence tests for our ingredient indicators:
+
+* __HAS_CHOCOLATE__ - The Chi-Squared test yields a p-value of `r chisq.test(choc_contingency_table)$p.value`, thus with 95% confidence we reject the null hypothesis that star rating is independent of `chocolate` ingredient content in the icecreams.
+* __HAS_FRUIT__ - The Chi-Squared test yields a p-value of `r chisq.test(fruit_contingency_table)$p.value`, thus with 95% confidence we reject the null hypothesis that star rating is independent of `fruit` ingredient content in the icecreams.
+* __HAS_ORGANIC__ - The Chi-Squared test yields a p-value of `r chisq.test(organic_contingency_table)$p.value`, thus with 95% confidence we fail to reject the null hypothesis that star rating is independent of `organic` ingredient content in the icecreams.
+* __HAS_CARAMEL__ - The Chi-Squared test yields a p-value of `r chisq.test(fruit_contingency_table)$p.value`, thus with 95% confidence we reject the null hypothesis that star rating is independent of `caramel` ingredient content in the icecreams.
+
+With these results in mind we can say with high confidence that for the above ingredient groupings  star rating is not independent of ingredient content (organic ingredients being a notable exception)
 
 # References
 
