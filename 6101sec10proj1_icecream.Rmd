@@ -1,6 +1,6 @@
 ---
 title: "Midterm: Ice Cream"
-author: ""
+author: "Alonso Romero, Russ Ballard"
 # date: "today"
 date: "`r Sys.Date()`"
 output:
@@ -67,8 +67,7 @@ outf<-"icecream"
 zippath <- file.path(projwd, datadir, rawdir, zipf, fsep="/")
 outpath <-file.path(projwd, datadir, rawdir, outf, fsep="/") 
  
-#TODO, remove comment. This unzip is necessary but slows down knit operation 
-#unzip(zippath,exdir=outpath)
+unzip(zippath,exdir=outpath)
 ```
 The above chunk abstracts the filepath of the raw `icecream.zip` compressed directory to `data/raw/icecream.zip` within the working directory, which is presumed to be the top level of the repo. The .zip is extracted
 
