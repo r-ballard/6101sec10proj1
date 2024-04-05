@@ -68,6 +68,21 @@ outpath <- file.path(projwd, datadir, rawdir, outf, fsep='/')
 
 unzip(zippath, exdir=outpath)
 ```
+The above chunk abstracts the filepath of the raw `icecream.zip` compressed directory to `data/raw/icecream.zip` within the working directory, which is presumed to be the top level of the repo. The .zip is extracted
+
+```{r load colorbrew}
+brandcolorpath <- file.path(projwd, datadir, "processing/brandcolors.csv")
+brandcolordf <- data.frame(read.csv(brandcolorpath,
+                           header=TRUE,
+                           sep=",",
+                           quote="\"",
+                           colClasses=c("brand"="character",
+                                        "color"="character",
+                                        "fill"="character")))
+
+brandcolordf
+```
+A metadata table containing color choices for the different brands has been created, this abstraction can be used for setting colors in the subsequent visualizations for standardizaiton and ease of implementation. 
 
 ```{r load_products}
 prodcombpath <- file.path(outpath, "combined/products.csv")
@@ -193,7 +208,7 @@ Using `grepl` we are able to implement regex matching to create additional binar
 
 # Exploratory Data Analysis
 
-#### For this project we will be addressing the question: 
+#### For this project we will be addressing the question: Should Breyers introduce a new product of a flavor that would outperform their competitors, or improve an existing product to help boost their average rating?
 
 We will explore the Ice Cream dataset by creating graphs, performing tests, and finding the measures of central tendency and variation. First, we'll look at the overall dataset, and then the individual datasets of each of the four brands.
 
@@ -301,6 +316,219 @@ mosaicplot(brandrating_contingency_table)
 ```
 
 Above is the contingency table for the brand product-reviews. We can see that the proportions are as described in the histogram, largely 5's for all brands. Interestingly, Breyer's appears to have a larger proportion of 1's than the other groups.
+
+### Breyers
+
+Breyers is committed on using high quality ingredients. Breyers "start with high ingredients like colors and flavors from natural sources and sustainably farmed vanilla. [They] partner with American farmers for 100% Grade A milk and cream that comes from cows not treated with artificial growth hormones" ("About Breyers History", n.d.).
+ 
+```{r breyershist}
+breyers_data <- subset(products, Brand == "breyers")
+
+breycol <- brandcolordf$color[brandcolordf$brand=="breyers"]
+breyfill <-brandcolordf$fill[brandcolordf$brand=="breyers"]
+
+ggplot(breyers_data, aes(Rating)) +
+  geom_histogram(col=breycol, fill=breyfill, alpha=0.7) +
+  labs(x="Rating", y="Frequency") +
+  labs(title="Breyers' Product Rating Histogram using `ggplot`") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r breyerssummarystat}
+mean.breyratings <- mean(breyers_data$Rating)
+sd.breyratings <- sd(breyers_data$Rating)
+```
+
+From the graph, the breyers data is similar to the histogram of Ben & Jerry's and the combined dataset. The graph also displays a left-skewed distribution.
+The mean of the data above is `r mean.breyratings` and the standard deviation is `r sd.breyratings`
+
+```{r breyersprodratings}
+#color and fill are inverted here for readability
+ggplot(breyers_data, aes(x=ProductID, y=Rating)) +
+  geom_point(col=breyfill, fill=breycol, alpha=0.7) +
+  labs(x="ProductID", y='Rating') +
+  labs(title="Ratings for each individual Breyers products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r breyersextrema}
+# Finding the highest rated products
+max_rating_index <- which(breyers_data$Rating == max(breyers_data$Rating))
+max_productname <- breyers_data$ProductName[max_rating_index]
+
+# Finding the lowest rated products
+min_rating_index <- which(breyers_data$Rating == min(breyers_data$Rating))
+min_productname <- breyers_data$ProductName[min_rating_index]
+```
+
+Based from the graph, the highest rated Breyers product: `r max_productname`
+
+```{r, echo=FALSE, results='markup'}
+breyers_top <- subset(productreview, ProductID == "41_breyers")
+breyers_top_reviews <- breyers_top[, c("Review")]
+breyers_top_reviews
+```
+
+Above are the two reviews of Breyers' Oreo Snack Cups 10ct. Both reviews praise on how the ice cream is portioned out.
+
+Based from the graph, the lowest rated Breyers product: `r min_productname`
+
+```{r, echo=FALSE, results='markup'}
+breyers_low <- subset(productreview, ProductID == "66_breyers")
+breyers_low_reviews <- breyers_low[, c("Review")]
+head(breyers_low_reviews)
+```
+
+Above are the first 6 reviews of Breyers' Layered Dessert S'mores. Customers complained on how the product does not taste like s'mores. Specifically, the marshmellows and graham crackers was either lacking or tasted awful, and the overall taste of what customers expected for s'mores did not meet their expectations. Though some customers actually like the product.
+
+#### Measures of Central Tendency
+
+With the Breyers data subset, we will calculate the mean, median, and mode for this dataset.
+
+```{r echo=FALSE}
+mean.breyrating <- mean(breyers_data$Rating)
+median.breyrating <- median(breyers_data$Rating)
+mode.breyrating <- names(table(breyers_data$Rating))[table(breyers_data$Rating) == max(table(breyers_data$Rating))]
+```
+
+* `Mean`: `r mean.breyrating`
+* `Median`: `r median.breyrating`
+* `Mode`: `r mode.breyrating`
+
+The measures of central tendency show that the average rating is `r mean.breyrating`, the median rating is `r median.breyrating`, with a score of `r mode.breyrating` appearing most often. Again like the other brands, these values prove that the data displays a left skewed distribution.
+
+#### Measures of Variation
+
+With the Breyers data subset, we will calculate the range, mean deviation, standard deviation, and variance.
+
+```{r echo=FALSE}
+range.breyrating <- range(breyers_data$Rating)
+md.breyrating <- mean(abs(breyers_data$Rating - mean.breyrating))
+sd.breyrating <- sd(breyers_data$Rating)
+variance.breyrating <- var(breyers_data$Rating)
+```
+
+* `Range`: `r range.breyrating`
+* `Mean Deviation`: `r md.breyrating`
+* `Standard Deviation`: `r sd.breyrating`
+* `Variance`: `r variance.breyrating`
+
+With the Breyers dataset, the data ranges `r range.breyrating[2] - range.breyrating[1]` data points from the lowest point to the highest point. The mean deviation here shows us that on average, each value in the dataset is about `r md.breyrating` points away from the mean. The standard deviation shows us that the data is dispersed `r sd.breyrating` points in relation to the mean. The variance shows that each data point is about `r variance.breyrating` points away from the mean and other data points in the dataset.
+
+## Addressing the issue
+
+```{r results='markup'}
+summary_by_brand <- aggregate(Rating ~ Brand, data = products, FUN = summary)
+
+summary_by_brand
+```
+
+Here we see that the average rating for the Breyers brand is the lowest among the other brands in the dataset with an average rating of 3.96 compared to a rating of 4.00+ for the other brands.
+
+```{r results='markup'}
+breyers_products <- subset(products, Brand == "breyers")
+sorted_breyers <- breyers_products[order(breyers_products$Rating), ]
+lowest_breyers <- head(sorted_breyers[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
+
+lowest_breyers
+```
+
+Here we see the lowest 5 rated products that Breyers offers.
+
+In order for Breyers to help boost their average ratings. We would need to see the products that the other brands are struggling with to see where they should target.
+
+```{r results='markup'}
+bj_products <- subset(products, Brand == "bj")
+sorted_bj <- bj_products[order(bj_products$Rating), ]
+lowest_bj <- head(sorted_bj[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
+
+hd_products <- subset(products, Brand == "hd")
+sorted_hd <- hd_products[order(hd_products$Rating), ]
+lowest_hd <- head(sorted_hd[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
+
+tal_products <- subset(products, Brand == "talenti")
+sorted_tal <- tal_products[order(tal_products$Rating), ]
+lowest_tal <- head(sorted_tal[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
+
+lowest_bj
+lowest_hd
+lowest_tal
+```
+
+Here we see that there is similarities of products across brands such as the flavors of Chocolate Chip Cookie Dough and variations of a coffee flavor.
+
+Lets focus on the product, Chocolate Chip Cookie Dough.
+
+What are the common complaints that arose from the reviews?
+```{r}
+#install.packages("tm")
+library(tm)
+```
+
+```{r}
+cccd_breyers <- reviews[reviews$ProductID == "49_breyers", "Review"]
+corpus <- Corpus(VectorSource(cccd_breyers))
+
+corpus <- tm_map(corpus, tolower)
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, c("ice", "cookie", "dough", "cream", "breyers", "like", 'just', 'chocolate', 'chip', 'will', 'one'))
+corpus <- tm_map(corpus, stripWhitespace)
+
+dtm <- DocumentTermMatrix(corpus)
+matrix <- as.matrix(dtm)
+
+word_freq <- sort(colSums(matrix), decreasing=TRUE)
+
+word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsFactors = FALSE)
+
+barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='lightgreen', main='Frequently Used Words in Breyers Reviews', ylab= 'Word Frequencies')
+```
+
+```{r}
+cccd_bj <- reviews[reviews$ProductID == "50_bj", "Review"]
+corpus <- Corpus(VectorSource(cccd_bj))
+
+corpus <- tm_map(corpus, tolower)
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, c("ice", "cookie", "dough", "cream", "core", "like", 'just', 'chocolate', 'chip','ben', "'s", 'one'))
+corpus <- tm_map(corpus, stripWhitespace)
+
+dtm <- DocumentTermMatrix(corpus)
+matrix <- as.matrix(dtm)
+
+word_freq <- sort(colSums(matrix), decreasing=TRUE)
+
+word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsFactors = FALSE)
+
+barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='black', main="Frequently Used Words in Ben & Jerry's Reviews", ylab= 'Word Frequencies')
+```
+
+```{r}
+cccd_tal <- reviews[reviews$ProductID == "9_talenti", "Review"]
+corpus <- Corpus(VectorSource(cccd_tal))
+
+corpus <- tm_map(corpus, tolower)
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, removeWords, c("ice", "cookie", "dough", "cream", "gelato", "like", 'just', 'chocolate', 'chip', 'one', 'talenti', 'will'))
+corpus <- tm_map(corpus, stripWhitespace)
+
+dtm <- DocumentTermMatrix(corpus)
+matrix <- as.matrix(dtm)
+
+word_freq <- sort(colSums(matrix), decreasing=TRUE)
+
+word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsFactors = FALSE)
+
+barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='chocolate', main="Frequently Used Words in Talenti Reviews", ylab= 'Word Frequencies')
+```
+
 
 # References
 
