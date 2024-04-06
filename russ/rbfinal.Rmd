@@ -57,6 +57,7 @@ Our project uses an Ice Cream dataset that was retrieved from Kaggle from the fo
 
 ```{r decompress_data, echo=FALSE}
 
+#hardcoded for testing
 setwd("C:/Users/russe/Documents/github/6101sec10proj1/")
 projwd <- getwd()
 
@@ -85,6 +86,24 @@ brandcolordf <- data.frame(read.csv(brandcolorpath,
 brandcolordf
 ```
 A metadata table containing color choices for the different brands has been created, this abstraction can be used for setting colors in the subsequent visualizations for standardizaiton and ease of implementation. 
+
+```{r loadingredientcleaning}
+ingredientpath <- file.path(projwd, datadir, "processing/ingredientrenamedict.csv")
+ingredientrenamedf <- data.frame(read.csv(ingredientpath,
+                           header=TRUE,
+                           sep=",",
+                           quote="\"",
+                           colClasses=c("from_ingredient"="character",
+                                        "to_ingredient"="character")))
+
+ingredientrenamedf
+
+
+
+```
+A metadata table containing ingredient mappings. This dataframe can be used in precleaning to  reduce the number of ingredients in the ingredients field and strips special characters.
+
+
 
 ```{r load_products}
 prodcombpath <- file.path(outpath, "combined/products.csv")
@@ -246,8 +265,6 @@ ggplot(data = productreview, aes (x = Stars, color=Brand, fill = Brand)) +
   theme(plot.title = element_text(hjust = 0.5)) +
   theme(legend.position="none")
 
-
-
 ```
 
 Using `grepl` we are able to implement regex matching to create additional binary indicator fields for ingredients in the `products` dataframe. 
@@ -259,6 +276,9 @@ Using `grepl` we are able to implement regex matching to create additional binar
 We will explore the Ice Cream dataset by creating graphs, performing tests, and finding the measures of central tendency and variation. First, we'll look at the overall dataset, and then the individual datasets of each of the four brands.
 
 ```{r}
+
+
+#TODO DELETE, unnecessary with Breyers filtering above
 library(ggplot2)
 ggplot(data=products, aes(Rating)) +
   geom_histogram(col='blue', fill='lightblue', alpha=0.7) +
@@ -269,7 +289,7 @@ ggplot(data=products, aes(Rating)) +
 
 This histogram shows the overall ratings of all ice-cream products across all 4 brands of ice-cream. We can see that there is a high frequency of ratings within the 4 - 5 star range. Based on the histogram above, we can see a left skewed distribution. To further test the skewness, we will perform a QQ plot.
 
-```{r}
+```{r summarystatratings}
 sd.ratings <- sd(products$Rating)
 mean.ratings <- mean(products$Rating)
 sd.ratings
