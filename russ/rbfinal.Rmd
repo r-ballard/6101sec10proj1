@@ -31,7 +31,8 @@ pkg_vector <- c("ggplot2",
                 "lubridate",
                 "zoo",
                 "dplyr",
-                "DescTools")
+                "DescTools",
+                "tm")
 
 invisible(lapply(pkg_vector, loadPkg))
 ```
@@ -183,15 +184,13 @@ reviews <- rename(reviews,c('brand'='Brand',
                             'helpful_no'='Not Helpful',
                             'text'='Review',
                             'taste'='Taste',
-                            'ingredients'='Ingredients',
+                            'ingredients'='IngredientsDesc',
                             'texture'='Texture',
                             'likes'='Likes'))
 # xkabledplyhead(reviews, title = "Review header rows")
 ```
 
 ```{r breyerfilter}
-levels(products$Brand)
-  
 products <- products[products$Brand=="breyers",]
 reviews <- reviews[reviews$Brand=="breyers",]
 ```
@@ -232,16 +231,22 @@ productreview <- left_join(reviews,
 
 
 ```{r producthistograms}
+breycol <- brandcolordf[brandcolordf$brand=='breyers','color']
+breyfill <- brandcolordf[brandcolordf$brand=='breyers','fill']
+
+
 ggplot(data = productreview, aes (x = Stars, color=Brand, fill = Brand)) + 
   geom_histogram(binwidth=1,boundary=-.5) +
-  labs(title="Distribution of Star Ratings \nFor Icecream Brand",
+  labs(title="Distribution of Star Ratings \nFor Icecream Brand: Breyers",
    x="Star Rating",
    y="Review Count\n(in Thousands)") +
   scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
-  facet_grid(Brand ~ .) +
-  scale_fill_manual(values=brandcolordf$fill) +
-  scale_colour_manual(values=brandcolordf$color) +
-  theme(plot.title = element_text(hjust = 0.5))
+  scale_fill_manual(values=breyfill) +
+  scale_colour_manual(values=breycol) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none")
+
+
 
 ```
 
@@ -502,11 +507,6 @@ Here we see that there is similarities of products across brands such as the fla
 Lets focus on the product, Chocolate Chip Cookie Dough.
 
 What are the common complaints that arose from the reviews?
-```{r}
-#install.packages("tm")
-library(tm)
-```
-
 ```{r}
 cccd_breyers <- reviews[reviews$ProductID == "49_breyers", "Review"]
 corpus <- Corpus(VectorSource(cccd_breyers))
