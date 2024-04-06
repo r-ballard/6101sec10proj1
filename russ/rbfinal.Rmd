@@ -184,28 +184,35 @@ For the `reviews.csv` file, the variables in the dataset are:
 Regarding the dataset, there are important considerations that the author provides for users. First, "the collection of reviews on the brand websites may not be representative of overall opinion, i.e. there may be review censoring or presence of fake reviews meant to help/harm the image of the brand" (Pond, 2020). In order to combat this, the author, "intentionally chose brands that host some negative reviews on their website" (Pond, 2020). Next, the author acknowledges the parent companies of each of the brands. "Ben & Jerry's, Breyers, and Talenti are all owned by Uniever. Häagen-Dazs is owned by Froneri" (Pond, 2020). It is also important to note that, "Talenti is distinguished from the other brands as they produce gelato" (Pond, 2020).
 
 ```{r echo=FALSE}
-products <- rename(products,c('brand'='Brand',
-                              'key'='ProductID',
-                              'name'='ProductName',
-                              'subhead'='Subhead',
-                              'description'='ProductDescription',
-                              'rating'='Rating',
-                              'rating_count'='RatingCount',
-                              'ingredients'='Ingredients'))
 
-reviews <- rename(reviews,c('brand'='Brand',
-                            'key'='ProductID',
-                            'author'='Username',
-                            'date'='Date',
-                            'stars'='Stars',
-                            'title'='Title',
-                            'helpful_yes'='Helpful',
-                            'helpful_no'='Not Helpful',
-                            'text'='Review',
-                            'taste'='Taste',
-                            'ingredients'='IngredientsDesc',
-                            'texture'='Texture',
-                            'likes'='Likes'))
+products <- products %>% rename("Brand"=brand)
+colnames(products)
+
+
+products <- products %>%
+            rename("Brand"=brand,
+                   "ProductID"=key,
+                   "ProductName"=name,
+                   "Subhead"=subhead,
+                   "ProductDescription"=description,
+                   "Rating"=rating,
+                   "RatingCount"=rating_count,
+                   "Ingredients"=ingredients)
+  
+reviews <- reviews %>%
+           rename('Brand'=brand,
+                  'ProductID'=key,
+                  'Username'=author,
+                  'Date'=date,
+                  'Stars'=stars,
+                  'Title'=title,
+                  'Helpful'=helpful_yes,
+                  'Not Helpful'=helpful_no,
+                  'Review'=text,
+                  'Taste'=taste,
+                  'IngredientsDesc'=ingredients,
+                  'Texture'=texture,
+                  'Likes'=likes))
 # xkabledplyhead(reviews, title = "Review header rows")
 ```
 
@@ -247,6 +254,38 @@ productreview <- left_join(reviews,
                                                  IS_BAR),
                            by="ProductID", multiple="all")
 ```
+
+
+```{r ingredientparse}
+
+#Derive list of ingredients by decomposing roughly comma delimited ingredient list field
+productingredients <- unique(unlist(strsplit(productreview$Ingredients, ",")))
+
+#The output is somewhat dirty, trim leading whitespace
+productingredients <- sapply(productingredients,trimws,USE.NAMES = FALSE)
+
+productingredients <- str_sort(productingredients)
+productingredients <- gsub('†',"",productingredients)
+
+productingredients<-unique(productingredients)
+
+ingredientprocessingdict2 <-filter(ingredientprocessingdict, to_ingredient != "")
+
+prodcombdf$ingredients <- stri_replace_all_fixed(prodcombdf$ingredients,
+                                  pattern=ingredientprocessingdict2$from_ingredient,
+                                  replacement=ingredientprocessingdict2$to_ingredient,
+                                  vectorize=FALSE)
+
+# extract list of ingredients
+# for (i in 1:length(productingredients)) {
+#   print(productingredients[i])
+# } 
+
+
+
+```
+
+
 
 
 ```{r producthistograms}

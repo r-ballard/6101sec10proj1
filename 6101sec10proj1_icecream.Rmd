@@ -222,7 +222,7 @@ xkablesummary(reviews, title = "Summary of the reviews dataset")
 
 We will explore the Ice Cream dataset by creating graphs, performing tests, and finding the measures of central tendency and variation. First, we'll look at the overall dataset, and then the individual datasets of each of the four brands.
 
-```{r}
+```{r reviewshis}
 library(ggplot2)
 ggplot(data=products, aes(Rating)) +
   geom_histogram(col='blue', fill='lightblue', alpha=0.7) +
