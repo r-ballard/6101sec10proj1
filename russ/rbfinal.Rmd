@@ -56,6 +56,7 @@ Our project uses an Ice Cream dataset that was retrieved from Kaggle from the fo
 
 ```{r decompress_data, echo=FALSE}
 
+setwd("C:/Users/russe/Documents/github/6101sec10proj1/")
 projwd <- getwd()
 
 datadir <- "data"
@@ -163,11 +164,6 @@ For the `reviews.csv` file, the variables in the dataset are:
 Regarding the dataset, there are important considerations that the author provides for users. First, "the collection of reviews on the brand websites may not be representative of overall opinion, i.e. there may be review censoring or presence of fake reviews meant to help/harm the image of the brand" (Pond, 2020). In order to combat this, the author, "intentionally chose brands that host some negative reviews on their website" (Pond, 2020). Next, the author acknowledges the parent companies of each of the brands. "Ben & Jerry's, Breyers, and Talenti are all owned by Uniever. Häagen-Dazs is owned by Froneri" (Pond, 2020). It is also important to note that, "Talenti is distinguished from the other brands as they produce gelato" (Pond, 2020).
 
 ```{r echo=FALSE}
-colnames(products)[1:8]=c("Brand", "ProductID", "ProductName", "Subhead","ProductDescription", "Rating", "RatingCount", "Ingredients")
-# xkabledplyhead(products, title = "Product header rows")
-
-
-
 products <- rename(products,c('brand'='Brand',
                               'key'='ProductID',
                               'name'='ProductName',
@@ -192,6 +188,14 @@ reviews <- rename(reviews,c('brand'='Brand',
                             'likes'='Likes'))
 # xkabledplyhead(reviews, title = "Review header rows")
 ```
+
+```{r breyerfilter}
+levels(products$Brand)
+  
+products <- products[products$Brand=="breyers",]
+reviews <- reviews[reviews$Brand=="breyers",]
+```
+
 
 ```{r results='markup'}
 xkablesummary(products, title = "Summary of the products dataset")
@@ -226,6 +230,20 @@ productreview <- left_join(reviews,
                            by="ProductID", multiple="all")
 ```
 
+
+```{r producthistograms}
+ggplot(data = productreview, aes (x = Stars, color=Brand, fill = Brand)) + 
+  geom_histogram(binwidth=1,boundary=-.5) +
+  labs(title="Distribution of Star Ratings \nFor Icecream Brand",
+   x="Star Rating",
+   y="Review Count\n(in Thousands)") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  facet_grid(Brand ~ .) +
+  scale_fill_manual(values=brandcolordf$fill) +
+  scale_colour_manual(values=brandcolordf$color) +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
 
 Using `grepl` we are able to implement regex matching to create additional binary indicator fields for ingredients in the `products` dataframe. 
 
