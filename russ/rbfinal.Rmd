@@ -185,10 +185,6 @@ Regarding the dataset, there are important considerations that the author provid
 
 ```{r echo=FALSE}
 
-products <- products %>% rename("Brand"=brand)
-colnames(products)
-
-
 products <- products %>%
             rename("Brand"=brand,
                    "ProductID"=key,
@@ -212,7 +208,7 @@ reviews <- reviews %>%
                   'Taste'=taste,
                   'IngredientsDesc'=ingredients,
                   'Texture'=texture,
-                  'Likes'=likes))
+                  'Likes'=likes)
 # xkabledplyhead(reviews, title = "Review header rows")
 ```
 
@@ -242,24 +238,9 @@ products$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = products$Prod
                                 grepl(pattern = "BAR", x = products$Subhead)))
 ```
 
-```{r joinproductreview}
-
-productreview <- left_join(reviews,
-                           products %>% select(ProductID,
-                                                 HAS_CARAMEL,
-                                                 HAS_CHOCOLATE,
-                                                 HAS_FRUIT,
-                                                 HAS_VANILLA,
-                                                 HAS_ORGANIC,
-                                                 IS_BAR),
-                           by="ProductID", multiple="all")
-```
-
-
 ```{r ingredientparse}
 
-#Derive list of ingredients by decomposing roughly comma delimited ingredient list field
-productingredients <- unique(unlist(strsplit(productreview$Ingredients, ",")))
+productingredients <- unique(unlist(strsplit(products$Ingredients, ",")))
 
 #The output is somewhat dirty, trim leading whitespace
 productingredients <- sapply(productingredients,trimws,USE.NAMES = FALSE)
@@ -269,21 +250,36 @@ productingredients <- gsub('†',"",productingredients)
 
 productingredients<-unique(productingredients)
 
-ingredientprocessingdict2 <-filter(ingredientprocessingdict, to_ingredient != "")
+ingredientprocessingdict2 <-filter(ingredientrenamedf, to_ingredient != "")
 
-prodcombdf$ingredients <- stri_replace_all_fixed(prodcombdf$ingredients,
+products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
                                   pattern=ingredientprocessingdict2$from_ingredient,
                                   replacement=ingredientprocessingdict2$to_ingredient,
                                   vectorize=FALSE)
 
-# extract list of ingredients
-# for (i in 1:length(productingredients)) {
-#   print(productingredients[i])
-# } 
 
 
 
 ```
+
+
+
+```{r joinproductreview}
+
+productreview <- left_join(reviews,
+                           products %>% select(ProductID,
+                                                 HAS_CARAMEL,
+                                                 HAS_CHOCOLATE,
+                                                 HAS_FRUIT,
+                                                 HAS_VANILLA,
+                                                 HAS_ORGANIC,
+                                                 IS_BAR,
+                                                 Ingredients),
+                           by="ProductID", multiple="all")
+```
+
+
+
 
 
 
