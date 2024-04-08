@@ -257,11 +257,18 @@ products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
                                   replacement=ingredientprocessingdict2$to_ingredient,
                                   vectorize=FALSE)
 
+```
 
+
+```{r productsplit}
+
+product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.67, 0.33))
+
+product_training <- products[product_sample==1, -which(names(products) %in% c("Rating"))]
+product_test <- products[product_sample==2, -which(names(products) %in% c("Rating"))]
 
 
 ```
-
 
 
 ```{r joinproductreview}
@@ -277,11 +284,6 @@ productreview <- left_join(reviews,
                                                  Ingredients),
                            by="ProductID", multiple="all")
 ```
-
-
-
-
-
 
 
 ```{r producthistograms}
@@ -301,6 +303,36 @@ ggplot(data = productreview, aes (x = Stars, color=Brand, fill = Brand)) +
   theme(legend.position="none")
 
 ```
+
+
+```{r breyerproductratings}
+#Color and fill are inverted here for readability
+
+#sortorder
+ratingorder <- products[order(products$Rating, decreasing = TRUE),"ProductID"]
+
+
+ggplot(products, aes(x=ProductID, y=Rating)) +
+  #geom_point(col=paste(breyfill), fill=paste(breycol), alpha=0.7) +
+  geom_point(aes(col=HAS_CHOCOLATE), alpha=0.7) +
+  labs(x="ProductID", y='Rating') +
+  labs(title="Average Ratings for Each Individual Breyers products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_x_discrete(limits=ratingorder)
+
+
+ggplot(products, aes(x=ProductID, y=Rating)) +
+  #geom_point(col=paste(breyfill), fill=paste(breycol), alpha=0.7) +
+  geom_point(aes(col=HAS_CARAMEL), alpha=0.7) +
+  labs(x="ProductID", y='Rating') +
+  labs(title="Average Ratings for Each Individual Breyers products") + 
+  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_x_discrete(limits=ratingorder)
+```
+
+
 
 Using `grepl` we are able to implement regex matching to create additional binary indicator fields for ingredients in the `products` dataframe. 
 
