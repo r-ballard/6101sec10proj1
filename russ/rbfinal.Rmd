@@ -27,12 +27,14 @@ pkg_vector <- c("ggplot2",
                 "gridExtra",
                 "tidyverse",
                 "stringi",
+                "stringr",
                 "scales",
                 "lubridate",
                 "zoo",
                 "dplyr",
                 "DescTools",
-                "tm")
+                "tm",
+                "FactoMineR")
 
 invisible(lapply(pkg_vector, loadPkg))
 ```
@@ -257,6 +259,8 @@ products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
                                   replacement=ingredientprocessingdict2$to_ingredient,
                                   vectorize=FALSE)
 
+
+
 ```
 
 
@@ -302,7 +306,7 @@ productreview <- left_join(reviews,
                            by="ProductID", multiple="all")
 
 productreview_training <- (left_join(review_training,
-                           products %>% select(ProductID,
+                           product_training %>% select(ProductID,
                                                  HAS_CARAMEL,
                                                  HAS_CHOCOLATE,
                                                  HAS_FRUIT,
@@ -313,7 +317,7 @@ productreview_training <- (left_join(review_training,
                            by="ProductID", multiple="all"))
   
 productreview_test <- (left_join(review_test,
-                           products %>% select(ProductID,
+                           product_test %>% select(ProductID,
                                                  HAS_CARAMEL,
                                                  HAS_CHOCOLATE,
                                                  HAS_FRUIT,
@@ -327,6 +331,71 @@ productreview_test <- (left_join(review_test,
 
 ```
 
+
+```{r ingredient matrix}
+
+#https://towardsdatascience.com/cooking-recipes-with-pca-5c33a4acb7db
+#https://stackoverflow.com/questions/40795141/pca-for-categorical-features
+#https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/
+
+
+
+ingredindicator <- products %>% 
+                   rownames_to_column(var="row") %>% 
+                   separate_rows(Ingredients, sep=",") %>% 
+                   mutate(Ingredients = str_squish(Ingredients)) %>%
+                   count(row, Ingredients) %>% 
+                   spread(Ingredients, n, fill = 0)
+
+
+#ingredindicator$ProductID <- products$ProductID
+ingredindicator <- ingredindicator[ ,-which(names(ingredindicator) %in% c("row")) ]
+
+colnames(ingredindicator)
+
+sapply(ingredindicator, class)
+
+col_names <- names(ingredindicator)
+ingredindicator <- ingredindicator %>%
+  mutate(across(all_of(col_names), as.factor))
+
+
+cats = apply(ingredindicator, 2, function(x) nlevels(as.factor(x)))
+
+
+mca1 = MCA(ingredindicator, graph = FALSE,ncp=5)
+
+mca1
+
+mca1$eig
+
+mca1_vars_df = data.frame(mca1$var$coord, Variable = rep(names(cats), cats))
+
+# data frame with observation coordinates
+mca1_obs_df = data.frame(mca1$ind$coord)
+
+# plot of variable categories
+ggplot(data=mca1_vars_df, 
+       aes(x = Dim.1, y = Dim.2, label = rownames(mca1_vars_df))) +
+ geom_hline(yintercept = 0, colour = "gray70") +
+ geom_vline(xintercept = 0, colour = "gray70") +
+ geom_text(aes(colour=Variable)) +
+ ggtitle("MCA plot of variables using R package FactoMineR")
+
+
+
+
+# load data tea
+data(tea)
+
+# select these columns
+newtea = tea[, c("Tea", "How", "how", "sugar", "where", "always")]
+
+# take a peek
+head(newtea)
+
+
+```
 
 ```{r producthistograms}
 breycol <- brandcolordf[brandcolordf$brand=='breyers','color']
@@ -361,17 +430,19 @@ ggplot(products, aes(x=ProductID, y=Rating)) +
   labs(title="Average Ratings for Each Individual Breyers products") + 
   theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
   theme(plot.title = element_text(hjust = 0.5)) +
-  scale_x_discrete(limits=ratingorder)
+  scale_x_discrete(limits=ratingorder) +
+  scale_color_manual(values = c("grey","brown"))
 
 
 ggplot(products, aes(x=ProductID, y=Rating)) +
   #geom_point(col=paste(breyfill), fill=paste(breycol), alpha=0.7) +
-  geom_point(aes(col=HAS_CARAMEL), alpha=0.7) +
+  geom_point(aes(col=HAS_CARAMEL)) +
   labs(x="ProductID", y='Rating') +
   labs(title="Average Ratings for Each Individual Breyers products") + 
   theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
   theme(plot.title = element_text(hjust = 0.5)) +
-  scale_x_discrete(limits=ratingorder)
+  scale_x_discrete(limits=ratingorder) +
+  scale_color_manual(values = c("grey","chocolate"))
 ```
 
 
