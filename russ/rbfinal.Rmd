@@ -25,7 +25,6 @@ set.seed(20052)
 
 pkg_vector <- c("ggplot2",
                 "gridExtra",
-                "tidyverse",
                 "stringi",
                 "stringr",
                 "scales",
@@ -34,9 +33,13 @@ pkg_vector <- c("ggplot2",
                 "dplyr",
                 "DescTools",
                 "tm",
-                "FactoMineR")
-
+                "FactoMineR",
+                "tidyverse")
+#
+#"MASS"
 invisible(lapply(pkg_vector, loadPkg))
+
+
 ```
 
 
@@ -266,7 +269,7 @@ products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
 
 ```{r productsplit}
 
-product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.67, 0.33))
+product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.8, 0.2))
 
 product_training.labels <- products[product_sample==1, which(names(products) %in% c("Rating"))]
 product_training <- products[product_sample==1, -which(names(products) %in% c("Rating"))]
@@ -347,34 +350,52 @@ ingredindicator <- products %>%
                    mutate(Ingredients = str_squish(Ingredients)) %>%
                    count(row, Ingredients) %>% 
                    spread(Ingredients, n, fill = 0)
-
+#ingredindicator$ProductID <- products$ProductID
 
 #ingredindicator$ProductID <- products$ProductID
 ingredindicator <- ingredindicator[ ,-which(names(ingredindicator) %in% c("row")) ]
-
-colnames(ingredindicator)
-
-sapply(ingredindicator, class)
+ingredindicator[ingredindicator > 0] <- 1
 
 col_names <- names(ingredindicator)
 ingredindicator <- ingredindicator %>%
   mutate(across(all_of(col_names), as.factor))
 
 
-cats = apply(ingredindicator, 2, function(x) nlevels(as.factor(x)))
+ingred_training <- ingredindicator[product_sample==1,]
+train.cats = apply(ingred_training, 2, function(x) nlevels(as.factor(x)))
+
+#TODO - ELIMINATE 0 FIELDS FOR PREDICTION MODEL
+#summary(ingred_training)
+#which(colSums(ingred_training==0) == nrow(ingred_training))
+#which(colSums(ingred_test==0) == nrow(ingred_test))
+
+ingred_test <- ingredindicator[product_sample==2,]
+test.cats = apply(ingred_test, 2, function(x) nlevels(as.factor(x)))
+
+mca1 = MCA(ingred_training, graph = FALSE)
+
+mcamass = mca(ingred_training)
+
+mca2 = MCA(ingred_test, graph = FALSE)
+
+newtest1 <- predict.MCA(object = mca1,
+            newdata = ingred_test)
+
+newtest2 <- predict.MCA(object = mca2,
+            newdata = ingred_training)
 
 
-mca1 = MCA(ingredindicator, graph = FALSE,ncp=5)
-
-mca1
-
-mca1$eig
-
-mca1_vars_df = data.frame(mca1$var$coord, Variable = rep(names(cats), cats))
+mca1_vars_df = data.frame(mca1$var$coord, Variable = rep(names(train.cats), train.cats))
 
 # data frame with observation coordinates
 mca1_obs_df = data.frame(mca1$ind$coord)
 
+predict.MCA(object = mca1,
+            newdata = ingred_test)
+
+mca1
+
+#not worthwhile, TODO: delete
 # plot of variable categories
 ggplot(data=mca1_vars_df, 
        aes(x = Dim.1, y = Dim.2, label = rownames(mca1_vars_df))) +
@@ -384,17 +405,16 @@ ggplot(data=mca1_vars_df,
  ggtitle("MCA plot of variables using R package FactoMineR")
 
 
-
-
-# load data tea
-data(tea)
-
-# select these columns
-newtea = tea[, c("Tea", "How", "how", "sugar", "where", "always")]
-
-# take a peek
-head(newtea)
-
+# 
+# # load data tea
+# data(tea)
+# 
+# # select these columns
+# newtea = tea[, c("Tea", "How", "how", "sugar", "where", "always")]
+# 
+# # take a peek
+# head(newtea)
+# 
 
 ```
 
