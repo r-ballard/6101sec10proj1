@@ -337,7 +337,8 @@ productreview_test <- (left_join(review_test,
 #https://towardsdatascience.com/cooking-recipes-with-pca-5c33a4acb7db
 #https://stackoverflow.com/questions/40795141/pca-for-categorical-features
 #https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/
-
+#https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100
+#http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/
 
 
 ingredindicator <- products %>% 
