@@ -343,6 +343,31 @@ productreview_test <- (left_join(review_test,
 ```
 
 
+
+
+```{r helper function factominer}
+add_names_to_values = function(x,colname){
+return(paste0(colname,"_",x))
+}
+
+preprocess_mca = function(base, preguntas){
+
+base_char = apply(base[,preguntas],2,as.factor)
+base_char = as.data.frame(base_char)
+for ( col in colnames(base_char))
+{
+base_char[col] = apply(base_char[col],2,add_names_to_values,colname=col)
+}
+return(base_char)
+}
+
+
+
+ingred_test <- preprocess_mca(ingred_test)
+```
+There is a known issue with FactoMineR predict.MCA() which causes it to create matrices which are not calcuable for cross-products
+
+
 ```{r ingredient matrix}
 
 #https://towardsdatascience.com/cooking-recipes-with-pca-5c33a4acb7db
@@ -350,6 +375,10 @@ productreview_test <- (left_join(review_test,
 #https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/
 #https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100
 #http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/
+
+
+
+#factominer issue: https://github.com/husson/FactoMineR/issues/15
 
 
 ingredindicator <- products %>% 
@@ -367,18 +396,19 @@ ingredindicator[ingredindicator > 0] <- 1
 
 
 ingredindicator$traintest <- product_sample
-
-testsums <- aggregate(.~traintest,ingredindicator,sum)
-
-
-
+ingredcounts <- aggregate(.~traintest,ingredindicator,sum)
+ingrednozeros <- ingredcounts %>% select(where(~ all(. != 0)))
+ingrednozeros <- colnames(ingrednozeros)
 
 col_names <- names(ingredindicator)
 ingredindicator <- ingredindicator %>%
   mutate(across(all_of(col_names), as.factor))
 
+ingredindicator <- ingredindicator[,-which(names(ingredindicator) %in% c("traintest"))]
 
+#ingred_training <- ingredindicator[product_sample==1,]
 ingred_training <- ingredindicator[product_sample==1,]
+ingred_training <- ingred_training[,which(names(ingred_training) %in% ingrednozeros)]
 train.cats = apply(ingred_training, 2, function(x) nlevels(as.factor(x)))
 
 #TODO - ELIMINATE 0 FIELDS FOR PREDICTION MODEL
@@ -386,26 +416,16 @@ train.cats = apply(ingred_training, 2, function(x) nlevels(as.factor(x)))
 #which(colSums(ingred_training==0) == nrow(ingred_training))
 #which(colSums(ingred_test==0) == nrow(ingred_test))
 
+which(names(ingredindicator) %in% ingrednozeros)
+#ingred_test <- ingredindicator[product_sample==2,]
 ingred_test <- ingredindicator[product_sample==2,]
+ingred_test <- ingred_test[,which(names(ingred_test) %in% ingrednozeros)]
 test.cats = apply(ingred_test, 2, function(x) nlevels(as.factor(x)))
-
-
-
-
-
 
 mca1 = MCA(ingred_training, graph = FALSE)
 
-mcamass = mca(ingred_training)
-
-mca2 = MCA(ingred_test, graph = FALSE)
-
 newtest1 <- predict.MCA(object = mca1,
             newdata = ingred_test)
-
-newtest2 <- predict.MCA(object = mca2,
-            newdata = ingred_training)
-
 
 mca1_vars_df = data.frame(mca1$var$coord, Variable = rep(names(train.cats), train.cats))
 
@@ -415,7 +435,42 @@ mca1_obs_df = data.frame(mca1$ind$coord)
 predict.MCA(object = mca1,
             newdata = ingred_test)
 
-mca1
+
+
+
+
+#--- troubleshoot factorminer
+mca1$svd$V
+t(as.matrix(ingred_test))
+
+newdata <- ingred_test
+object <- mca1
+olddata <- object$call$X[,rownames(object$var$eta),drop=FALSE]
+newdata <- rbind(olddata,newdata)[-(1:nrow(olddata)),,drop=FALSE]
+
+pb <-NULL
+for (i in 1:ncol(newdata)) {
+  if (sum(!levels(newdata[,i])%in%levels(olddata[,i]))>0) pb <- c(pb, levels(newdata[,i])[which(!levels(newdata[,i])%in%levels(olddata[,i]))])
+}
+
+tab.newdata <- tab.disjonctif(newdata)
+marge.col <- object$call$marge.col
+ncp <- ncol(object$ind$coord)
+
+somme.row <- rowSums(tab.newdata)
+tab.newdata <- tab.newdata/somme.row
+coord <- crossprod(t(as.matrix(tab.newdata)),object$svd$V)
+dist2.row <- rowSums(t((t(tab.newdata)-marge.col)^2/marge.col))
+cos2 <- coord^2/dist2.row
+coord <- coord[, 1:ncp,drop=FALSE]
+cos2 <- cos2[, 1:ncp,drop=FALSE]
+colnames(coord) <- colnames(cos2) <- paste("Dim", 1:ncp)
+rownames(coord) <- rownames(cos2) <- rownames(newdata)
+result <- list(coord = coord, cos2 = cos2)
+
+
+
+
 
 #not worthwhile, TODO: delete
 # plot of variable categories
