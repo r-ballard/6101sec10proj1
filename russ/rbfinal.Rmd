@@ -295,6 +295,14 @@ review_test <- reviews[reviews$ProductID %in% product_test$ProductID,
 ```
 
 
+
+```{r reviewproductcount}
+
+#TODO delete section
+#Check number of reviews by product id
+table(reviews$ProductID)
+```
+
 ```{r joinproductreview}
 
 productreview <- left_join(reviews,
@@ -352,9 +360,18 @@ ingredindicator <- products %>%
                    spread(Ingredients, n, fill = 0)
 #ingredindicator$ProductID <- products$ProductID
 
+
 #ingredindicator$ProductID <- products$ProductID
 ingredindicator <- ingredindicator[ ,-which(names(ingredindicator) %in% c("row")) ]
 ingredindicator[ingredindicator > 0] <- 1
+
+
+ingredindicator$traintest <- product_sample
+
+testsums <- aggregate(.~traintest,ingredindicator,sum)
+
+
+
 
 col_names <- names(ingredindicator)
 ingredindicator <- ingredindicator %>%
@@ -371,6 +388,11 @@ train.cats = apply(ingred_training, 2, function(x) nlevels(as.factor(x)))
 
 ingred_test <- ingredindicator[product_sample==2,]
 test.cats = apply(ingred_test, 2, function(x) nlevels(as.factor(x)))
+
+
+
+
+
 
 mca1 = MCA(ingred_training, graph = FALSE)
 
