@@ -432,43 +432,8 @@ mca1_vars_df = data.frame(mca1$var$coord, Variable = rep(names(train.cats), trai
 # data frame with observation coordinates
 mca1_obs_df = data.frame(mca1$ind$coord)
 
-predict.MCA(object = mca1,
+mcaout <- predict.MCA(object = mca1,
             newdata = ingred_test)
-
-
-
-
-
-#--- troubleshoot factorminer
-mca1$svd$V
-t(as.matrix(ingred_test))
-
-newdata <- ingred_test
-object <- mca1
-olddata <- object$call$X[,rownames(object$var$eta),drop=FALSE]
-newdata <- rbind(olddata,newdata)[-(1:nrow(olddata)),,drop=FALSE]
-
-pb <-NULL
-for (i in 1:ncol(newdata)) {
-  if (sum(!levels(newdata[,i])%in%levels(olddata[,i]))>0) pb <- c(pb, levels(newdata[,i])[which(!levels(newdata[,i])%in%levels(olddata[,i]))])
-}
-
-tab.newdata <- tab.disjonctif(newdata)
-marge.col <- object$call$marge.col
-ncp <- ncol(object$ind$coord)
-
-somme.row <- rowSums(tab.newdata)
-tab.newdata <- tab.newdata/somme.row
-coord <- crossprod(t(as.matrix(tab.newdata)),object$svd$V)
-dist2.row <- rowSums(t((t(tab.newdata)-marge.col)^2/marge.col))
-cos2 <- coord^2/dist2.row
-coord <- coord[, 1:ncp,drop=FALSE]
-cos2 <- cos2[, 1:ncp,drop=FALSE]
-colnames(coord) <- colnames(cos2) <- paste("Dim", 1:ncp)
-rownames(coord) <- rownames(cos2) <- rownames(newdata)
-result <- list(coord = coord, cos2 = cos2)
-
-
 
 
 
