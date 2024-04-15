@@ -36,7 +36,13 @@ pkg_vector <- c("ggplot2",
                 "FactoMineR",
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 "tidyverse")
+=======
+                "factoextra",
+                "tidyverse",
+                "MASS")
+>>>>>>> Stashed changes
 =======
                 "factoextra",
                 "tidyverse",
@@ -153,7 +159,11 @@ reviews <- data.frame(read.csv(reviewpath,
                                           "date"="character",
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                                           "stars"="numeric",
+=======
+                                          "stars"="factor",
+>>>>>>> Stashed changes
 =======
                                           "stars"="factor",
 >>>>>>> Stashed changes
@@ -291,7 +301,11 @@ products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
 
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.8, 0.2))
+=======
+product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.67, 0.33))
+>>>>>>> Stashed changes
 =======
 product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.67, 0.33))
 >>>>>>> Stashed changes
@@ -389,15 +403,7 @@ base_char[col] = apply(base_char[col],2,add_names_to_values,colname=col)
 return(base_char)
 }
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 
-
-ingred_test <- preprocess_mca(ingred_test)
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 ```
 There is a known issue with FactoMineR predict.MCA() which causes it to create matrices which are not calcuable for cross-products
 
@@ -410,66 +416,35 @@ There is a known issue with FactoMineR predict.MCA() which causes it to create m
 #https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100
 #http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 
 
-#factominer issue: https://github.com/husson/FactoMineR/issues/15
-
-
-=======
-=======
->>>>>>> Stashed changes
 #factominer issue: https://github.com/husson/FactoMineR/issues/15
 
 
 #Create one-hot matrix for ingredients in Breyers products.
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 ingredindicator <- products %>% 
                    rownames_to_column(var="row") %>% 
                    separate_rows(Ingredients, sep=",") %>% 
                    mutate(Ingredients = str_squish(Ingredients)) %>%
                    count(row, Ingredients) %>% 
                    spread(Ingredients, n, fill = 0)
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-#ingredindicator$ProductID <- products$ProductID
-
 
 #ingredindicator$ProductID <- products$ProductID
-=======
-
 
 #"row" is added artifactually in the course of the one-hot matrix formulation and is dropped, we also cast duplicative ingredient listings to 1's i.e., has ingredient.
->>>>>>> Stashed changes
-=======
 
-
-#"row" is added artifactually in the course of the one-hot matrix formulation and is dropped, we also cast duplicative ingredient listings to 1's i.e., has ingredient.
->>>>>>> Stashed changes
 ingredindicator <- ingredindicator[ ,-which(names(ingredindicator) %in% c("row")) ]
 ingredindicator[ingredindicator > 0] <- 1
 
-
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 ingredindicator$traintest <- product_sample
-=======
-=======
->>>>>>> Stashed changes
+
 #Can use training productnames instead..
 #ingredindicator$ProductID <- products$ProductID
 ingredindicator$traintest <- product_sample
 
 
 #Here we create an aggregate table with indicator sums by train and test for each ingredient. We use this to identify non-contributing factors in either train or test. This was done in order to allow for cross products using FactoRMineR.
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+
 ingredcounts <- aggregate(.~traintest,ingredindicator,sum)
 ingrednozeros <- ingredcounts %>% select(where(~ all(. != 0)))
 ingrednozeros <- colnames(ingrednozeros)
@@ -496,46 +471,6 @@ ingred_test <- ingredindicator[product_sample==2,]
 ingred_test <- ingred_test[,which(names(ingred_test) %in% ingrednozeros)]
 test.cats = apply(ingred_test, 2, function(x) nlevels(as.factor(x)))
 
-
-mca1 = MCA(ingred_training, graph = FALSE)
-
-newtest1 <- predict.MCA(object = mca1,
-            newdata = ingred_test)
-
-mca1_vars_df = data.frame(mca1$var$coord, Variable = rep(names(train.cats), train.cats))
-
-# data frame with observation coordinates
-mca1_obs_df = data.frame(mca1$ind$coord)
-
-mcaout <- predict.MCA(object = mca1,
-            newdata = ingred_test)
-
-
-
-#not worthwhile, TODO: delete
-# plot of variable categories
-ggplot(data=mca1_vars_df, 
-       aes(x = Dim.1, y = Dim.2, label = rownames(mca1_vars_df))) +
- geom_hline(yintercept = 0, colour = "gray70") +
- geom_vline(xintercept = 0, colour = "gray70") +
- geom_text(aes(colour=Variable)) +
- ggtitle("MCA plot of variables using R package FactoMineR")
-
-
-# 
-# # load data tea
-# data(tea)
-# 
-# # select these columns
-# newtea = tea[, c("Tea", "How", "how", "sugar", "where", "always")]
-# 
-# # take a peek
-# head(newtea)
-# 
-
-```
-
-=====
 ingred_mca <- MCA(ingred_training, graph = FALSE)
 fviz_screeplot(ingred_mca, addlabels = TRUE)
 
@@ -583,17 +518,14 @@ lda.fit=MASS::lda(Stars∼Dim_1+Dim_2+Dim_3+Dim_4+Dim_5,data=productreview_train
 #subset=train
 
 
-lda.fit=lda(Direction∼Lag1+Lag2 ,data=Smarket ,subset=train)
+#lda.fit=lda(Direction∼Lag1+Lag2 ,data=Smarket ,subset=train)
 
 ingred_test.mcadim <- as.data.frame(ingred_predict)
 ingred_test.mcadim['ProductID'] <- product_test['ProductID']
 ingred_test.mcadim['avg_ratings']<-product_training.labels
 
-
-
-
-
 ```
+
 
 ```{r producthistograms}
 breycol <- brandcolordf[brandcolordf$brand=='breyers','color']
