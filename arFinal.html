@@ -11,7 +11,7 @@
 
 <meta name="author" content="Alonso Romero, Russ Ballard" />
 
-<meta name="date" content="2024-04-14" />
+<meta name="date" content="2024-04-15" />
 
 <title>Final: Ice Cream</title>
 
@@ -2598,7 +2598,7 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">Final: Ice Cream</h1>
 <h4 class="author">Alonso Romero, Russ Ballard</h4>
-<h4 class="date">2024-04-14</h4>
+<h4 class="date">2024-04-15</h4>
 
 </div>
 
@@ -3294,18 +3294,18 @@ NA
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>products$HAS_VANILLA &lt;- as.factor(as.integer(grepl(pattern = &quot;VANILLA&quot;, x = products$Ingredients)))
-products$HAS_ORGANIC &lt;- as.factor(as.integer(grepl(pattern = &quot;ORGANIC&quot;, x = products$Ingredients)))
-products$HAS_CARAMEL &lt;- as.factor(as.integer(grepl(pattern = &quot;CARAMEL&quot;, x = products$Ingredients)))
+<pre class="r"><code>products$HAS_VANILLA &lt;- as.factor(as.integer(grepl(pattern = &quot;VANILLA&quot;, x = products$Ingredients, ignore.case = TRUE)))
+products$HAS_ORGANIC &lt;- as.factor(as.integer(grepl(pattern = &quot;ORGANIC&quot;, x = products$Ingredients, ignore.case = TRUE)))
+products$HAS_CARAMEL &lt;- as.factor(as.integer(grepl(pattern = &quot;CARAMEL&quot;, x = products$Ingredients, ignore.case = TRUE)))
 
 fruitvec &lt;- c(&quot;RASPBERR&quot;,&quot;CHERR&quot;,&quot;BLUEBERR&quot;,&quot;BANANA&quot;)
-products$HAS_FRUIT &lt;- as.factor(as.integer(grepl(pattern=paste(fruitvec,collapse=&quot;|&quot;), x=products$Ingredients)))
+products$HAS_FRUIT &lt;- as.factor(as.integer(grepl(pattern=paste(fruitvec,collapse=&quot;|&quot;), x=products$Ingredients, ignore.case = TRUE)))
 
 chocvec &lt;- c(&quot;CHOCOLAT&quot;,&quot;COCO&quot;)
-products$HAS_CHOCOLATE &lt;- as.factor(as.integer(grepl(pattern=paste(chocvec,collapse=&quot;|&quot;), x=products$Ingredients)))
+products$HAS_CHOCOLATE &lt;- as.factor(as.integer(grepl(pattern=paste(chocvec,collapse=&quot;|&quot;), x=products$Ingredients, ignore.case = TRUE)))
 
-products$IS_BAR &lt;- as.factor(as.integer(grepl(pattern = &quot;BAR&quot;, x = products$ProductName) | 
-                                grepl(pattern = &quot;BAR&quot;, x = products$Subhead)))</code></pre>
+products$IS_BAR &lt;- as.factor(as.integer(grepl(pattern = &quot;\\bBAR\\b&quot;, x = products$ProductName, ignore.case = TRUE) | 
+                                grepl(pattern = &quot;\\bBAR\\b&quot;, x = products$Subhead, ignore.case = TRUE)))</code></pre>
 <pre class="r"><code>productreview &lt;- left_join(reviews,
                            products %&gt;% select(ProductID,
                                                  HAS_CARAMEL,
@@ -3672,6 +3672,10 @@ hypothesis and conclude that there is a significance difference between
 the medians of Breyers and the other three brands.</p>
 <p>Next, we will be creating a linear regression model to allow us to
 make predictions on what Breyers should do to improve their ratings.</p>
+</div>
+</div>
+<div id="modeling" class="section level2">
+<h2>Modeling</h2>
 <pre class="r"><code>lm_model &lt;- lm(Rating ~ Brand + HAS_CARAMEL + HAS_CHOCOLATE + HAS_FRUIT + HAS_VANILLA + HAS_ORGANIC + IS_BAR, data = products)
 
 summary(lm_model)</code></pre>
@@ -3682,20 +3686,20 @@ summary(lm_model)</code></pre>
 ## 
 ## Residuals:
 ##    Min     1Q Median     3Q    Max 
-## -2.610 -0.236  0.164  0.391  0.963 
+## -2.607 -0.235  0.165  0.389  0.965 
 ## 
 ## Coefficients:
 ##                Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)     4.41116    0.12915   34.16  &lt; 2e-16 ***
-## Brandbreyers   -0.49102    0.12153   -4.04  7.3e-05 ***
-## Brandhd        -0.06813    0.10945   -0.62    0.534    
-## Brandtalenti    0.00833    0.12591    0.07    0.947    
-## HAS_CARAMEL1   -0.02466    0.13232   -0.19    0.852    
-## HAS_CHOCOLATE1  0.11666    0.09821    1.19    0.236    
-## HAS_FRUIT1     -0.00678    0.13505   -0.05    0.960    
-## HAS_VANILLA1   -0.22693    0.09241   -2.46    0.015 *  
-## HAS_ORGANIC1    0.30271    0.32167    0.94    0.348    
-## IS_BAR1         0.09079    0.60876    0.15    0.882    
+## (Intercept)     4.41324    0.13031   33.87  &lt; 2e-16 ***
+## Brandbreyers   -0.49314    0.12256   -4.02  7.8e-05 ***
+## Brandhd        -0.07259    0.11380   -0.64    0.524    
+## Brandtalenti    0.01082    0.12490    0.09    0.931    
+## HAS_CARAMEL1   -0.02464    0.13232   -0.19    0.852    
+## HAS_CHOCOLATE1  0.11482    0.09934    1.16    0.249    
+## HAS_FRUIT1     -0.00738    0.13491   -0.05    0.956    
+## HAS_VANILLA1   -0.22795    0.09285   -2.46    0.015 *  
+## HAS_ORGANIC1    0.29935    0.32143    0.93    0.353    
+## IS_BAR1         0.02204    0.14949    0.15    0.883    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
@@ -3723,10 +3727,10 @@ product_ingredients</code></pre>
 ##     HAS_CARAMEL HAS_CHOCOLATE HAS_FRUIT HAS_VANILLA HAS_ORGANIC IS_BAR
 ## 8             0             1         1           1           0      0
 ## 30            0             1         0           1           0      0
-## 72            0             1         0           1           0      0
+## 72            0             1         0           1           0      1
 ## 89            0             0         0           1           0      0
 ## 101           0             1         0           0           0      0
-## 102           0             1         0           1           0      0
+## 102           0             1         0           1           0      1
 ## 121           1             1         0           1           0      0
 ## 214           0             1         0           0           0      0</code></pre>
 <p>Based on the table above, we see the products across all 4 brands
@@ -3769,9 +3773,9 @@ new_data$IS_BAR &lt;- as.factor(new_data$IS_BAR)
 predicted_ratings &lt;- predict(lm_model, newdata = new_data)
 predicted_ratings</code></pre>
 <pre><code>##    1 
-## 4.04</code></pre>
+## 4.03</code></pre>
 <p>If Breyers were to introduce a product that contains a chocolate
-ingredient by itself, the predicted rating for it would be 4.037. We see
+ingredient by itself, the predicted rating for it would be 4.035. We see
 that having a product that contains chocolate is a good indicator for a
 good rating.</p>
 <pre class="r"><code>new_data &lt;- data.frame(
@@ -3798,7 +3802,7 @@ predicted_ratings</code></pre>
 ## 3.69</code></pre>
 <p>On the other hand, if Breyers were to introduce a new product that
 contains a vanilla ingredient by itself, the predicted rating for it
-would be 3.693. Comparing vanilla against chocolate, we see that vanilla
+would be 3.692. Comparing vanilla against chocolate, we see that vanilla
 performs the poorly in terms of predicted ratings.</p>
 <pre class="r"><code>new_data &lt;- data.frame(
   Brand = &quot;breyers&quot;,
@@ -3823,7 +3827,7 @@ predicted_ratings</code></pre>
 <pre><code>##    1 
 ## 3.81</code></pre>
 <p>If Breyers were to include both chocolate and vanilla ingredients
-into a new product, then the predicted rating would be 3.81. The result
+into a new product, then the predicted rating would be 3.807. The result
 is not as good for ratings.</p>
 <pre class="r"><code>new_data &lt;- data.frame(
   Brand = &quot;breyers&quot;,
@@ -3848,7 +3852,7 @@ predicted_ratings</code></pre>
 <pre><code>##    1 
 ## 4.01</code></pre>
 <p>If Breyers were to introduce a new product that contains caramel and
-chocolate, then the predicted rating would be 4.012.</p>
+chocolate, then the predicted rating would be 4.01.</p>
 <pre class="r"><code>new_data &lt;- data.frame(
   Brand = &quot;breyers&quot;,
   Name = &quot;Organic Chocolate&quot;,
@@ -3870,9 +3874,9 @@ new_data$IS_BAR &lt;- as.factor(new_data$IS_BAR)
 predicted_ratings &lt;- predict(lm_model, newdata = new_data)
 predicted_ratings</code></pre>
 <pre><code>##    1 
-## 4.34</code></pre>
+## 4.33</code></pre>
 <p>If Breyers were to introduce a new product that contains chocolate
-and organic ingredients, then the predicted rating would be 4.34.</p>
+and organic ingredients, then the predicted rating would be 4.334.</p>
 <pre class="r"><code>new_data &lt;- data.frame(
   Brand = &quot;breyers&quot;,
   Name = &quot;Chocolate/Vanilla&quot;,
@@ -3894,11 +3898,11 @@ new_data$IS_BAR &lt;- as.factor(new_data$IS_BAR)
 predicted_ratings &lt;- predict(lm_model, newdata = new_data)
 predicted_ratings</code></pre>
 <pre><code>##    1 
-## 4.42</code></pre>
+## 4.35</code></pre>
 <p>For Breyers to achieve a high predicted rating based on the linear
 regression model, they would need to include chocolate, fruit, and
 organic ingredients in the form of a bar, which would earn a predicted
-rating of 4.424.</p>
+rating of 4.349.</p>
 <pre class="r"><code>exact_match_products &lt;- products[products$HAS_CHOCOLATE == 1 &amp; products$HAS_FRUIT == 1 &amp; products$HAS_ORGANIC == 1 &amp; products$IS_BAR == 1, c(&quot;Brand&quot;, &quot;ProductName&quot;, &quot;Rating&quot;)]
 
 exact_match_products</code></pre>
@@ -3933,22 +3937,73 @@ test_match1</code></pre>
 ## 170 talenti                   VANILLA BLUEBERRY CRUMBLE GELATO    3.9
 ## 200 breyers            Raspberry Cheesecake Gelato Indulgences    4.5
 ## 228 breyers                          Black Raspberry Chocolate    4.4</code></pre>
+<pre class="r"><code>new_data &lt;- data.frame(
+  Brand = &quot;breyers&quot;,
+  Name = &quot;Chocolate/Vanilla&quot;,
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 1,
+  HAS_VANILLA = 0,
+  HAS_ORGANIC = 0,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL &lt;- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE &lt;- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT &lt;- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA &lt;- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC &lt;- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR &lt;- as.factor(new_data$IS_BAR)
+
+predicted_ratings &lt;- predict(lm_model, newdata = new_data)</code></pre>
+<p>Finding products that have chocolate and fruit ingredients, we see
+that there are 17 products, which two are Breyers products. To see if we
+can improve these products we need to consider the predicted rating for
+the improvement, which would be 4.028. Since the predicted rating is
+lower than the ratings of their existing products, it is best to not
+pursue changing the product.</p>
 <pre class="r"><code>test_match2 &lt;- products[products$HAS_CHOCOLATE == 1 &amp; products$HAS_ORGANIC == 1, c(&quot;Brand&quot;, &quot;ProductName&quot;, &quot;Rating&quot;)]
 
 test_match2</code></pre>
 <pre><code>##       Brand                     ProductName Rating
 ## 156 talenti ORGANIC CHOCOLATE MOUSSE GELATO    4.3</code></pre>
+<p>Finding products that has chocolate and organic ingredients, we see
+that only result comes up from Talenti.</p>
 <pre class="r"><code>test_match3 &lt;- products[products$HAS_FRUIT == 1 &amp; products$HAS_ORGANIC == 1, c(&quot;Brand&quot;, &quot;ProductName&quot;, &quot;Rating&quot;)]
 
 test_match3</code></pre>
 <pre><code>## [1] Brand       ProductName Rating     
 ## &lt;0 rows&gt; (or 0-length row.names)</code></pre>
-<pre class="r"><code>test_match4 &lt;- products[products$IS_BAR == 1, c(&quot;Brand&quot;, &quot;ProductName&quot;, &quot;Rating&quot;)]
+<p>Finding products that has fruits and organic ingredients, we see that
+there are no products that contain these ingredient categories.</p>
+<pre class="r"><code>test_match4 &lt;- products[products$HAS_CHOCOLATE == 1 &amp; products$HAS_FRUIT == 1 &amp; products$IS_BAR == 1, c(&quot;Brand&quot;, &quot;ProductName&quot;, &quot;Rating&quot;)]
 
 test_match4</code></pre>
-<pre><code>##       Brand            ProductName Rating
-## 162 talenti PEPPERMINT BARK GELATO    4.4</code></pre>
+<pre><code>##     Brand                             ProductName Rating
+## 127    hd White Chocolate Raspberry Ice Cream Bar    3.9</code></pre>
+<p>Finding products that has chocolate and fruit ingredients that is
+also a bar, provides us one match from Häagen-Dazs.</p>
+<pre class="r"><code>find_bars &lt;- products[products$Brand == &quot;breyers&quot; &amp; products$IS_BAR == 1, c(&quot;ProductName&quot;, &quot;Rating&quot;)]
+
+find_bars</code></pre>
+<pre><code>##                      ProductName Rating
+## 206        CarbSmart™ Almond Bar    4.3
+## 209       CarbSmart™ Vanilla Bar    4.2
+## 212         CarbSmart™ Fudge Bar    4.4
+## 213    CarbSmart™ Mint Fudge Bar    4.6
+## 238 CarbSmart™ Caramel Swirl Bar    4.7</code></pre>
+<p>The bars that Breyers currently offer is their CarbSmart products.
+According to Breyers’ website, their “CarbSmart products prove that
+fewer carbs [does] not mean less taste. … At 3-5g net carbs and 60-150
+calories per serving, you can treat yourself to a scoop without the
+guilt” (“CarbSmart”, n.d.). Given the name of the product line, not
+everyone would be inclined to purchase the product since they are not in
+a low-carb diet. Even those that are purchasing from this product line
+love the products, Breyers should consider introducing regular-style
+bars.</p>
 </div>
+<div id="introduction-of-a-new-product-an-ice-cream-bar" class="section level2">
+<h2>Introduction of a New Product: An Ice Cream Bar</h2>
 <div id="maybe-for-possible-deletion" class="section level3">
 <h3>Maybe for possible deletion</h3>
 <pre class="r"><code>breyers_products &lt;- subset(products, Brand == &quot;breyers&quot;)
@@ -4070,10 +4125,7 @@ barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col
 <h1>References</h1>
 <p>About Breyers History. (N.d.). Breyers. Retrieved March 12, 2024,
 from <a href="https://www.breyers.com/us/en/about.html" class="uri">https://www.breyers.com/us/en/about.html</a></p>
-<p>About Us. (N.d.). Häagen Dazs. Retrieved March 12, 2024, from <a href="https://www.icecream.com/us/en/brands/haagen-dazs/about" class="uri">https://www.icecream.com/us/en/brands/haagen-dazs/about</a></p>
-<p>Our Process. (N.d.). Talenti. Retrieved March 12, 2024, from <a href="https://www.talentigelato.com/us/en/our-process.html" class="uri">https://www.talentigelato.com/us/en/our-process.html</a></p>
-<p>Our Values, Activism, and Mission. (N.d.). Ben &amp; Jerry’s.
-Retrieved March 12, 2024, from <a href="https://www.benjerry.com/values" class="uri">https://www.benjerry.com/values</a></p>
+<p>CarbSmart. (N.d). Breyers. Retrieved April 15, 2024, from <a href="https://www.breyers.com/us/en/products/carbsmart.html" class="uri">https://www.breyers.com/us/en/products/carbsmart.html</a></p>
 <p>Pond, T. (2020, Sept). Ice Cream Dataset. Kaggle. Retrieved March 11,
 2024, from <a href="https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data" class="uri">https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data</a></p>
 </div>
