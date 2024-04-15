@@ -426,6 +426,291 @@ summary_by_brand
 
 Here we see that the average rating for the Breyers brand is the lowest among the other brands in the dataset with an average rating of 3.96 compared to a rating of 4.00+ for the other brands.
 
+### Comparative Analysis
+
+Further statistical comparisons will be conducted to compare the four brands in order to gain information for further tests.
+
+```{r results='markup'}
+ggplot(products, aes(x=Brand, y=Rating)) +
+  geom_boxplot() +
+  labs(title = "Distribution of Ratings Across Brands")
+```
+
+With the box plot above, we see the distribution of the ratings across the four brands ice cream. We see that the first and third quartiles and the median for Ben and Jerry's, Häagen-Dazs, and Talenti all fall above the rating of 4 mark. Breyer's first quartile falls below the rating of 4 line. Overall, we see that the Breyer's data performs the worse compared to the other brands. 
+
+```{r results='markup'}
+ggplot(products, aes(x=Rating, fill=Brand)) +
+  geom_density(alpha=0.5) +
+  labs(title = "Density of Ratings Across Brands")
+```
+
+With the density plot above, we see the data in a continuous and smooth representation. We see that the density is heavily concentrated in the right side of the graph. Breyers still appear to be the shortest hill among the other brands at the rating of 4 area. The data also shows that Breyers produce a second hill around the 3 mark that is the tallest among the other brands.
+
+Now, we will be determining if there is a significant difference between the means of Breyers and the other three brands individually through pairwise t-testing with a 0.05 significance level.
+
+For these t-tests:
+
+* `Null Hypothesis`: There is no significant difference between the means of Breyers and the other brand.
+* `Alternative Hypothesis`: There is a significant difference between the means of Breyers and the other brand.
+
+```{r t-test, results='markup'}
+breyers_ratings <- products$Rating[products$Brand == "breyers"]
+bj_ratings <- products$Rating[products$Brand == "bj"]
+hd_ratings <- products$Rating[products$Brand == "hd"]
+talenti_ratings <- products$Rating[products$Brand == "talenti"]
+
+t_test_bj <- t.test(breyers_ratings, bj_ratings)
+t_test_hd <- t.test(breyers_ratings, hd_ratings)
+t_test_tal <- t.test(breyers_ratings, talenti_ratings)
+
+t_test_bj
+t_test_hd
+t_test_tal
+```
+
+Based on the results of the t-tests, we see that all three p-values are less than the 0.05 significance level. Therefore, we will reject the null hypothesis and conclude that there is a significant difference between the means of Breyers and each of the three other brands.
+
+Next, we will be determining if there is a significant difference between the medians of Breyers and the other three brands by using the Wilcoxon Signed-Rank test with a 0.05 significance level.
+
+For these tests:
+
+* `Null Hypothesis`: There is no significant difference between the medians of Breyers and the other brand.
+* `Alternative Hypothesis`: There is a significant difference between the medians of Breyers and the other brand.
+
+```{r wilcox_test, results='markup'}
+wilcox_test_bj <- wilcox.test(breyers_ratings, bj_ratings)
+wilcox_test_hd <- wilcox.test(breyers_ratings, hd_ratings)
+wilcox_test_tal <- wilcox.test(breyers_ratings, talenti_ratings)
+
+wilcox_test_bj
+wilcox_test_hd
+wilcox_test_tal
+```
+
+Based on the results, we find that all p-values are less than the significance level of 0.05. Therefore, we will reject the null hypothesis and conclude that there is a significance difference between the medians of Breyers and the other three brands.
+
+Next, we will be creating a linear regression model to allow us to make predictions on what Breyers should do to improve their ratings.
+
+```{r regression_model, results='markup'}
+lm_model <- lm(Rating ~ Brand + HAS_CARAMEL + HAS_CHOCOLATE + HAS_FRUIT + HAS_VANILLA + HAS_ORGANIC + IS_BAR, data = products)
+
+summary(lm_model)
+```
+
+Determine what categories are used in the highly popular products from the other brands
+
+```{r results='markup'}
+subset_data <- subset(products, Brand %in% c("bj", "hd", "talenti", "breyers") & Rating == 5)
+
+ingredient_categories <- subset_data[, c("Brand", "ProductName", "Rating",  "HAS_CARAMEL", "HAS_CHOCOLATE", "HAS_FRUIT", "HAS_VANILLA", "HAS_ORGANIC", "IS_BAR")]
+
+product_ingredients <- unique(ingredient_categories)
+
+product_ingredients
+```
+
+Based on the table above, we see the products across all 4 brands that have an average rating of 5 with the ingredient categories that each have.
+
+We see that there are no products across all 4 brands that have organic ingredients or is a bar. 1 product that has caramel and 1 product that has fruit. Then many products that have Chocolate and Vanilla.
+
+We will now predict the ratings of ice cream products that contains a different combination of ingredient categories to see which would result in a high rating.
+
+The different ingredient categories are as follows:
+
+* Has Caramel
+* Has Chocolate
+* Has Fruit
+* Has Vanilla
+* Has Organic Ingredients
+* Is a Bar
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Chocolate",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 0,
+  HAS_VANILLA = 0,
+  HAS_ORGANIC = 0,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+If Breyers were to introduce a product that contains a chocolate ingredient by itself, the predicted rating for it would be `r predicted_ratings`. We see that having a product that contains chocolate is a good indicator for a good rating.
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Vanilla",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 0,
+  HAS_FRUIT = 0,
+  HAS_VANILLA = 1,
+  HAS_ORGANIC = 0,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+On the other hand, if Breyers were to introduce a new product that contains a vanilla ingredient by itself, the predicted rating for it would be `r predicted_ratings`. Comparing vanilla against chocolate, we see that vanilla performs the poorly in terms of predicted ratings.
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Chocolate/Vanilla",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 0,
+  HAS_VANILLA = 1,
+  HAS_ORGANIC = 0,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+If Breyers were to include both chocolate and vanilla ingredients into a new product, then the predicted rating would be `r predicted_ratings`. The result is not as good for ratings.
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Chocolate with Caramel",
+  HAS_CARAMEL = 1,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 0,
+  HAS_VANILLA = 0,
+  HAS_ORGANIC = 0,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+If Breyers were to introduce a new product that contains caramel and chocolate, then the predicted rating would be `r predicted_ratings`. 
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Organic Chocolate",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 0,
+  HAS_VANILLA = 0,
+  HAS_ORGANIC = 1,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+If Breyers were to introduce a new product that contains chocolate and organic ingredients, then the predicted rating would be `r predicted_ratings`.
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Chocolate/Vanilla",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 1,
+  HAS_VANILLA = 0,
+  HAS_ORGANIC = 1,
+  IS_BAR = 1
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+For Breyers to achieve a high predicted rating based on the linear regression model, they would need to include chocolate, fruit, and organic ingredients in the form of a bar, which would earn a predicted rating of `r predicted_ratings`.
+
+```{r match_possible_products, results='markup'}
+exact_match_products <- products[products$HAS_CHOCOLATE == 1 & products$HAS_FRUIT == 1 & products$HAS_ORGANIC == 1 & products$IS_BAR == 1, c("Brand", "ProductName", "Rating")]
+
+exact_match_products
+```
+
+Finding products that Breyers could see from other brands as well as themselves to improve on and produce a product to achieve a high rating with. From the linear regression model, to achieve the highest rating from the predictive model, the product would need to have chocolate, fruit, and organic ingredients in the form of a bar. However, there are no products that match these specifications in the dataset.
+
+Lets try to dissect each category to find possible products to influence the new product or to improve Breyers' existing products.
+```{r match1, results='markup'}
+test_match1 <- products[products$HAS_CHOCOLATE == 1 & products$HAS_FRUIT == 1, c("Brand", "ProductName", "Rating")]
+
+test_match1
+```
+
+```{r match2, results='markup'}
+test_match2 <- products[products$HAS_CHOCOLATE == 1 & products$HAS_ORGANIC == 1, c("Brand", "ProductName", "Rating")]
+
+test_match2
+```
+
+```{r match3, results='markup'}
+test_match3 <- products[products$HAS_FRUIT == 1 & products$HAS_ORGANIC == 1, c("Brand", "ProductName", "Rating")]
+
+test_match3
+```
+
+```{r match4, results='markup'}
+test_match4 <- products[products$IS_BAR == 1, c("Brand", "ProductName", "Rating")]
+
+test_match4
+```
+
+
+
+### Maybe for possible deletion
+
 ```{r results='markup'}
 breyers_products <- subset(products, Brand == "breyers")
 sorted_breyers <- breyers_products[order(breyers_products$Rating), ]
@@ -529,6 +814,10 @@ word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsF
 barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='chocolate', main="Frequently Used Words in Talenti Reviews", ylab= 'Word Frequencies')
 ```
 
+
+```{r}
+
+```
 
 # References
 
