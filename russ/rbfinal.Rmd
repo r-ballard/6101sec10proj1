@@ -496,8 +496,7 @@ ingred_test <- ingredindicator[product_sample==2,]
 ingred_test <- ingred_test[,which(names(ingred_test) %in% ingrednozeros)]
 test.cats = apply(ingred_test, 2, function(x) nlevels(as.factor(x)))
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
+
 mca1 = MCA(ingred_training, graph = FALSE)
 
 newtest1 <- predict.MCA(object = mca1,
@@ -536,9 +535,7 @@ ggplot(data=mca1_vars_df,
 
 ```
 
-=======
-=======
->>>>>>> Stashed changes
+=====
 ingred_mca <- MCA(ingred_training, graph = FALSE)
 fviz_screeplot(ingred_mca, addlabels = TRUE)
 
@@ -598,15 +595,6 @@ ingred_test.mcadim['avg_ratings']<-product_training.labels
 
 ```
 
-
-
-
-
-
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 ```{r producthistograms}
 breycol <- brandcolordf[brandcolordf$brand=='breyers','color']
 breyfill <- brandcolordf[brandcolordf$brand=='breyers','fill']
