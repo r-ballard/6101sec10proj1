@@ -499,7 +499,7 @@ lm_model <- lm(Rating ~ Brand + HAS_CARAMEL + HAS_CHOCOLATE + HAS_FRUIT + HAS_VA
 summary(lm_model)
 ```
 
-Determine what categories are used in the highly popular products from the other brands
+Above we see how the linear regression model is structured.
 
 ```{r results='markup'}
 subset_data <- subset(products, Brand %in% c("bj", "hd", "talenti", "breyers") & Rating == 5)
@@ -745,126 +745,121 @@ find_bars
 
 The bars that Breyers currently offer is their CarbSmart products. According to Breyers' website, their "CarbSmart products prove that fewer carbs [does] not mean less taste. ... At 3-5g net carbs and 60-150 calories per serving, you can treat yourself to a scoop without the guilt" ("CarbSmart", n.d.). Given the name of the product line, not everyone would be inclined to purchase the product since they are not in a low-carb diet. Even those that are purchasing from this product line love the products, Breyers should consider introducing regular-style bars.
 
-## Introduction of a New Product: An Ice Cream Bar
- 
-
-
-
-
-
-
-
-
-
-### Maybe for possible deletion
+## Introduction of a New Product: Ice Cream Bars
 
 ```{r results='markup'}
-breyers_products <- subset(products, Brand == "breyers")
-sorted_breyers <- breyers_products[order(breyers_products$Rating), ]
-lowest_breyers <- head(sorted_breyers[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
+highrated_choco_breyers <- subset(products, Brand == "breyers" & Rating >= 4.5 & HAS_CHOCOLATE == 1, select = c(ProductName, Rating))
 
-lowest_breyers
+highrated_choco_breyers
 ```
 
-Here we see the lowest 5 rated products that Breyers offers.
-
-In order for Breyers to help boost their average ratings. We would need to see the products that the other brands are struggling with to see where they should target.
+Bringing up the products that Breyers makes that has chocolate and is rated 4.5, we see the list above.
 
 ```{r results='markup'}
-bj_products <- subset(products, Brand == "bj")
-sorted_bj <- bj_products[order(bj_products$Rating), ]
-lowest_bj <- head(sorted_bj[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
+highrated_fruit_breyers <- subset(products, Brand == "breyers" & Rating >= 4.5 & HAS_FRUIT == 1, select = c(ProductName, Rating))
 
-hd_products <- subset(products, Brand == "hd")
-sorted_hd <- hd_products[order(hd_products$Rating), ]
-lowest_hd <- head(sorted_hd[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
-
-tal_products <- subset(products, Brand == "talenti")
-sorted_tal <- tal_products[order(tal_products$Rating), ]
-lowest_tal <- head(sorted_tal[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
-
-lowest_bj
-lowest_hd
-lowest_tal
+highrated_fruit_breyers
 ```
 
-Here we see that there is similarities of products across brands such as the flavors of Chocolate Chip Cookie Dough and variations of a coffee flavor.
+For Breyers products that contain fruit ingredients that have a rating of 4.5 and above, only one product comes up, Raspberry Cheesecake Gelato Indulgences.
 
-Lets focus on the product, Chocolate Chip Cookie Dough.
+```{r results='markup'}
+highrated_organic <- subset(products, Rating >= 4.0 & HAS_ORGANIC == 1, select = c(ProductName, Rating))
 
-What are the common complaints that arose from the reviews?
+highrated_organic
+```
+
+When it comes to organic ingredients, Breyers does not use any organic ingredients (at least listed in their ingredients). Therefore, we will check products from other brands that has organic ingredients and have a rating of 4.0 or more. From this we can see the products that Breyers can consider using the ingredients for their new product.
+
+Based on the three categories, we can suggest that Breyers incorporates the product ingredients of the Products `Chocolate`, `Raspberry Cheesecake Gelato Indulgences`, and `Organic Chocolate Mousse Gelato`.
+
+Let's look at the ingredients used in Breyers' Bar products
+```{r results='markup'}
+breyers_products <- subset(products, Brand == "breyers" & IS_BAR == 1, select = c("ProductName", "Ingredients"))
+
+breyers_products
+```
+
+We see the Breyers' bar products and its ingredients. Lets see the frequencies of each ingredient in these 5 products.
+
 ```{r}
 #install.packages("tm")
 library(tm)
+
+multi_word_ingredients <- c("coconut oil", "maltitol syrup", "soybean oil", "dutched cocoa", "sodium caseinate", "calcium carbonate", "soluble corn fiber", "natural flavor", "vegetable gums", "carob bean", "soy lecithin", "mono and diglycerides", "acesulfame potassium", "fudge swirl", "corn syrup", "high fructose corn syrup", "lactic acid", "potassium sorbate", "carob bean gum", "guar gum", "color added", "caramel swirl", "nonfat milk solids", "sodium citrate", "modified food starch")
 ```
 
-```{r}
-cccd_breyers <- reviews[reviews$ProductID == "49_breyers", "Review"]
-corpus <- Corpus(VectorSource(cccd_breyers))
+```{r results='markup'}
+preprocess_text <- function(text) {
+  text <- tolower(text)
+  
+  text <- gsub("[[:punct:]]", " ", text)
+  
+  text <- gsub("\\b\\d+\\b", "", text)
+  
+  text <- gsub("\\s+", " ", text)
 
-corpus <- tm_map(corpus, tolower)
-corpus <- tm_map(corpus, removePunctuation)
-corpus <- tm_map(corpus, removeNumbers)
-corpus <- tm_map(corpus, removeWords, stopwords("english"))
-corpus <- tm_map(corpus, removeWords, c("ice", "cookie", "dough", "cream", "breyers", "like", 'just', 'chocolate', 'chip', 'will', 'one'))
-corpus <- tm_map(corpus, stripWhitespace)
+  for (ingredient in multi_word_ingredients) {
+    text <- gsub(ingredient, gsub(" ", "-", ingredient), text)
+  }
+  
+  return(text)
+}
 
-dtm <- DocumentTermMatrix(corpus)
-matrix <- as.matrix(dtm)
+bar_ingredients <- subset(products, Brand == "breyers" & IS_BAR == 1, select = c("Ingredients"))
 
-word_freq <- sort(colSums(matrix), decreasing=TRUE)
+bar_ingredients$Ingredients <- lapply(bar_ingredients$Ingredients, preprocess_text)
 
-word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsFactors = FALSE)
+all_ingredients <- paste(bar_ingredients$Ingredients, collapse = " ")
 
-barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='lightgreen', main='Frequently Used Words in Breyers Reviews', ylab= 'Word Frequencies')
+tokenized_ingredients <- unlist(strsplit(all_ingredients, "\\s+"))
+
+exclude_words <- c("with", "high", "processed", "alkali", "tapioca", "preservative", "for", "color")
+
+tokenized_ingredients <- tokenized_ingredients[!tokenized_ingredients %in% exclude_words]
+
+ingredient_freq <- table(tokenized_ingredients)
+
+ingredient_freq_df <- data.frame(ingredient = names(ingredient_freq), frequency = as.numeric(ingredient_freq))
+
+ingredient_freq_df <- ingredient_freq_df[order(ingredient_freq_df$frequency, decreasing = TRUE), ]
+
+ggplot(ingredient_freq_df, aes(x = reorder(ingredient, -frequency), y = frequency)) +
+  geom_bar(stat = "identity", fill = "lightgreen") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Ingredients", y = "Frequency", title = "Ingredient Frequencies")
 ```
 
-```{r}
-cccd_bj <- reviews[reviews$ProductID == "50_bj", "Review"]
-corpus <- Corpus(VectorSource(cccd_bj))
+We see the frequencies of each ingredient from Breyers' bar products. We will take this into consideration when deciding what ingredients to consider for the new product.
 
-corpus <- tm_map(corpus, tolower)
-corpus <- tm_map(corpus, removePunctuation)
-corpus <- tm_map(corpus, removeNumbers)
-corpus <- tm_map(corpus, removeWords, stopwords("english"))
-corpus <- tm_map(corpus, removeWords, c("ice", "cookie", "dough", "cream", "core", "like", 'just', 'chocolate', 'chip','ben', "'s", 'one'))
-corpus <- tm_map(corpus, stripWhitespace)
+```{r results='markup'}
+product_ids <- c("3_breyers", "27_breyers", "28_talenti")
+product_subset <- subset(products, ProductID %in% product_ids, select = c("ProductName", "Ingredients"))
 
-dtm <- DocumentTermMatrix(corpus)
-matrix <- as.matrix(dtm)
-
-word_freq <- sort(colSums(matrix), decreasing=TRUE)
-
-word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsFactors = FALSE)
-
-barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='black', main="Frequently Used Words in Ben & Jerry's Reviews", ylab= 'Word Frequencies')
+product_subset
 ```
 
-```{r}
-cccd_tal <- reviews[reviews$ProductID == "9_talenti", "Review"]
-corpus <- Corpus(VectorSource(cccd_tal))
+Here we can see the ingredients of the three products that Breyers should consider when creating the new product.
 
-corpus <- tm_map(corpus, tolower)
-corpus <- tm_map(corpus, removePunctuation)
-corpus <- tm_map(corpus, removeNumbers)
-corpus <- tm_map(corpus, removeWords, stopwords("english"))
-corpus <- tm_map(corpus, removeWords, c("ice", "cookie", "dough", "cream", "gelato", "like", 'just', 'chocolate', 'chip', 'one', 'talenti', 'will'))
-corpus <- tm_map(corpus, stripWhitespace)
+Altogether, we can suggest that Breyers create the product `Organic Chocolate Raspberry Bar` to help improve their ratings. This product should the following ingredients:
 
-dtm <- DocumentTermMatrix(corpus)
-matrix <- as.matrix(dtm)
+* `Organic Milk`
+* `Coconut Oil`
+* `Water`
+* `Organic Cream`
+* `Organic Cane Sugar`
+* `Organic Chocolate`
+* `Natural Flavor`
+* `Organic Dextrose`
+* `Organic Butter`
+* `Raspberry Puree Concentrate`
+* `Organic Carob Bean Gum`
+* `Mono and Diglycerides`
+* `Whey`
+* `Salt`
 
-word_freq <- sort(colSums(matrix), decreasing=TRUE)
+Here are ingredients that were considered after analyzing the ingredients of the other products. This is not a complete  exhaustive list of ingredients to be used, but should be considered in order to achieve the ratings predicted by our model. More or less ingredients can be used, to make product taste up to their standards.
 
-word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsFactors = FALSE)
-
-barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='chocolate', main="Frequently Used Words in Talenti Reviews", ylab= 'Word Frequencies')
-```
-
-
-```{r}
-
-```
 
 # References
 
