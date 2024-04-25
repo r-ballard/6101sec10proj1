@@ -34,25 +34,9 @@ pkg_vector <- c("ggplot2",
                 "DescTools",
                 "tm",
                 "FactoMineR",
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                "tidyverse")
-=======
                 "factoextra",
                 "tidyverse",
                 "MASS")
->>>>>>> Stashed changes
-=======
-                "factoextra",
-                "tidyverse",
-                "MASS")
->>>>>>> Stashed changes
-=======
-                "factoextra",
-                "tidyverse",
-                "MASS")
->>>>>>> Stashed changes
 #
 #"MASS"
 invisible(lapply(pkg_vector, loadPkg))
@@ -157,19 +141,7 @@ reviews <- data.frame(read.csv(reviewpath,
                                           "key"="character",
                                           "author"="character",
                                           "date"="character",
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                                          "stars"="numeric",
-=======
                                           "stars"="factor",
->>>>>>> Stashed changes
-=======
-                                          "stars"="factor",
->>>>>>> Stashed changes
-=======
-                                          "stars"="factor",
->>>>>>> Stashed changes
                                           "title"="character",
                                           "helpful_yes"="numeric",
                                           "helpful_no"="character",
@@ -299,19 +271,7 @@ products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
 
 ```{r productsplit}
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.8, 0.2))
-=======
 product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.67, 0.33))
->>>>>>> Stashed changes
-=======
-product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.67, 0.33))
->>>>>>> Stashed changes
-=======
-product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.67, 0.33))
->>>>>>> Stashed changes
 
 product_training.labels <- products[product_sample==1, which(names(products) %in% c("Rating"))]
 product_training <- products[product_sample==1, -which(names(products) %in% c("Rating"))]
