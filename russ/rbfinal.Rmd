@@ -126,6 +126,7 @@ products <- data.frame(read.csv(prodcombpath,
                                           "rating"="numeric",
                                           "rating_count"="numeric",
                                           "ingredients"="character")))
+products <- products %>% mutate_if(is.character, utf8::utf8_encode)
 
 ```
 
@@ -150,16 +151,16 @@ reviews <- data.frame(read.csv(reviewpath,
                                           "ingredients"="numeric",
                                           "texture"="character",
                                           "likes"="character")))
-
+reviews <- reviews %>% mutate_if(is.character, utf8::utf8_encode)
 reviews$date <- as.Date(reviews$date,'%Y-%m-%d')
 ```
 
-```{r}
+```{r rowcounts}
 nrow_products <- nrow(products)
 nrow_reviews <- nrow(reviews)
 ```
 
-The combined product dataset contains `r nrow_products` data points, and the combined reviews dataset contains `r nrow_reviews` data points.
+Here we load the `products` and `reviews` datasets, explicitly declaring dataframe field types, and cleaning the data of any characters which are not utf-8 encoded. The combined product dataset contains `r nrow_products` data points, and the combined reviews dataset contains `r nrow_reviews` data points.
 
 For the `products.csv` file, the variables in the dataset are:
 
@@ -190,7 +191,7 @@ For the `reviews.csv` file, the variables in the dataset are:
 
 Regarding the dataset, there are important considerations that the author provides for users. First, "the collection of reviews on the brand websites may not be representative of overall opinion, i.e. there may be review censoring or presence of fake reviews meant to help/harm the image of the brand" (Pond, 2020). In order to combat this, the author, "intentionally chose brands that host some negative reviews on their website" (Pond, 2020). Next, the author acknowledges the parent companies of each of the brands. "Ben & Jerry's, Breyers, and Talenti are all owned by Uniever. Häagen-Dazs is owned by Froneri" (Pond, 2020). It is also important to note that, "Talenti is distinguished from the other brands as they produce gelato" (Pond, 2020).
 
-```{r echo=FALSE}
+```{r colrename echo=FALSE}
 
 products <- products %>%
             rename("Brand"=brand,
@@ -396,7 +397,8 @@ ingredindicator <- products %>%
 ingredindicator <- ingredindicator[ ,-which(names(ingredindicator) %in% c("row")) ]
 ingredindicator[ingredindicator > 0] <- 1
 
-ingredindicator$traintest <- product_sample
+
+#ingredindicator$traintest <- product_sample
 
 #Can use training productnames instead..
 #ingredindicator$ProductID <- products$ProductID
@@ -417,6 +419,8 @@ ingredindicator <- ingredindicator[,-which(names(ingredindicator) %in% c("traint
 
 #ingred_training <- ingredindicator[product_sample==1,]
 ingred_training <- ingredindicator[product_sample==1,]
+
+#todo, remove comment if it breaks
 ingred_training <- ingred_training[,which(names(ingred_training) %in% ingrednozeros)]
 train.cats = apply(ingred_training, 2, function(x) nlevels(as.factor(x)))
 
@@ -425,9 +429,11 @@ train.cats = apply(ingred_training, 2, function(x) nlevels(as.factor(x)))
 #which(colSums(ingred_training==0) == nrow(ingred_training))
 #which(colSums(ingred_test==0) == nrow(ingred_test))
 
-which(names(ingredindicator) %in% ingrednozeros)
+#which(names(ingredindicator) %in% ingrednozeros)
 #ingred_test <- ingredindicator[product_sample==2,]
 ingred_test <- ingredindicator[product_sample==2,]
+
+#todo remove commentif breaks
 ingred_test <- ingred_test[,which(names(ingred_test) %in% ingrednozeros)]
 test.cats = apply(ingred_test, 2, function(x) nlevels(as.factor(x)))
 
@@ -438,6 +444,10 @@ fviz_screeplot(ingred_mca, addlabels = TRUE)
 ingred_test.preprocess <- preprocess_mca(ingred_test)
 ingred_predict <- predict.MCA(object = ingred_mca,
             newdata = ingred_test.preprocess)
+
+
+
+
 
 #not worthwhile, TODO: delete
 # plot of variable categories
@@ -452,12 +462,12 @@ ingred_predict <- predict.MCA(object = ingred_mca,
 ```
 
 ```{r LDA_training }
-head(ingred_training.mcadim)
-
 
 ingred_training.mcadim <- as.data.frame(ingred_mca$ind$coord)
+#head(ingred_training.mcadim)
 ingred_training.mcadim['ProductID'] <- product_training['ProductID']
 ingred_training.mcadim['avg_ratings']<-product_training.labels
+
 productreview_training <- left_join(productreview_training,
                                    ingred_training.mcadim %>% select('Dim 1',
                                                                      'Dim 2',
@@ -474,16 +484,57 @@ productreview_training <- productreview_training %>%
                                  "Dim_4"='Dim 4',
                                  "Dim_5"='Dim 5')
 
-lda.fit=MASS::lda(Stars∼Dim_1+Dim_2+Dim_3+Dim_4+Dim_5,data=productreview_training)
-#subset=train
+#lda.fit=MASS::lda(Stars ∼ Dim_1 + Dim_2 + Dim_3 + Dim_4 + Dim_5 , data = productreview_training)
 
+lda.fit <- MASS::lda(grouping=productreview_training$Stars, x=productreview_training[,c('Dim_1','Dim_2' ,'Dim_3','Dim_4','Dim_5')])
+
+lda.fit$prior
+
+plot(productreview_training$Dim_4, productreview_training$Dim_3, col=productreview_training$Stars)
+
+
+str(productreview_training)
+str(productreview_test)
+
+#subset=train
+#names(productreview_training)
 
 #lda.fit=lda(Direction∼Lag1+Lag2 ,data=Smarket ,subset=train)
 
-ingred_test.mcadim <- as.data.frame(ingred_predict)
+ingred_test.mcadim <- as.data.frame(ingred_predict$coord)
 ingred_test.mcadim['ProductID'] <- product_test['ProductID']
-ingred_test.mcadim['avg_ratings']<-product_training.labels
+ingred_test.mcadim['avg_ratings']<-product_test.labels
 
+productreview_test <- left_join(productreview_test,
+                                   ingred_test.mcadim %>% select('Dim 1',
+                                                                     'Dim 2',
+                                                                     'Dim 3',
+                                                                     'Dim 4',
+                                                                     'Dim 5',
+                                                                     ProductID),
+                                   by="ProductID",multiple="all")
+
+productreview_test <- productreview_test %>%
+                           rename("Dim_1"='Dim 1',
+                                 "Dim_2"='Dim 2',
+                                 "Dim_3"='Dim 3',
+                                 "Dim_4"='Dim 4',
+                                 "Dim_5"='Dim 5')
+
+productreview_test_prep <- productreview_test[c('Dim_1','Dim_2','Dim_3','Dim_4','Dim_5')]
+
+lda.pred <- predict(lda.fit,productreview_test_prep)
+
+productreview_test$pred <- lda.pred$class
+
+table(productreview_test$pred,productreview_test$Stars)
+table(productreview_test$Stars)
+
+cm <- confusionMatrix(lda.pred$class, reference = productreview_test$Stars )
+cm
+lda.pred
+
+plot(lda.fit)
 ```
 
 
