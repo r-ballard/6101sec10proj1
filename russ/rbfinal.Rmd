@@ -217,19 +217,21 @@ reviews <- reviews %>%
                   'IngredientsDesc'=ingredients,
                   'Texture'=texture,
                   'Likes'=likes)
-# xkabledplyhead(reviews, title = "Review header rows")
 ```
 
 ```{r breyerfilter}
 products <- products[products$Brand=="breyers",]
 reviews <- reviews[reviews$Brand=="breyers",]
 ```
+Here we subset the data to only include icecream of the brand `Breyers`. This preprocessing step was elected to study the `Breyers` data more specifically.
 
 
-```{r results='markup'}
+```{r productandreviewsummary, results='markup'}
 xkablesummary(products, title = "Summary of the products dataset")
 xkablesummary(reviews, title = "Summary of the reviews dataset")
 ```
+Above we review summaries of the `products` and `reviews` datasets.
+
 
 ```{r productindicators}
 products$HAS_VANILLA <- as.factor(as.integer(grepl(pattern = "VANILLA", x = products$Ingredients)))
@@ -246,11 +248,12 @@ products$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = products$Prod
                                 grepl(pattern = "BAR", x = products$Subhead)))
 ```
 
+By using `grepl` we are able to create simple binary indicators for ingredient content in the icecream.
+
 ```{r ingredientparse}
 
 productingredients <- unique(unlist(strsplit(products$Ingredients, ",")))
 
-#The output is somewhat dirty, trim leading whitespace
 productingredients <- sapply(productingredients,trimws,USE.NAMES = FALSE)
 
 productingredients <- str_sort(productingredients)
@@ -268,7 +271,7 @@ products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
 
 
 ```
-
+In this preprocessing step we convert the `products$ingredients` field from a single `character` entry into a vector of characters by treating commas in the `ingredients` field as a delimiter. We then use our `ingredientrenamedf` which contains string and string replacement values and was manually prepared by the data scientist to attempt to standardize the ingredient field in the `products$ingredients` field.
 
 ```{r productsplit}
 
@@ -281,6 +284,7 @@ product_test.labels <- products[product_sample==2, which(names(products) %in% c(
 product_test <- products[product_sample==2, -which(names(products) %in% c("Rating"))]
 
 ```
+We split the `product` dataset into training and testing. This is perhaps a bit early, or we could otherwise leave the data combined and subset the data using the `product_sample` vector at a later time.
 
 
 ```{r reviewsplit}
@@ -296,15 +300,8 @@ review_test <- reviews[reviews$ProductID %in% product_test$ProductID,
                            -which(names(products) %in% c("Rating"))]
 
 ```
+Similar to above, but for the `reviews` dataset.
 
-
-
-```{r reviewproductcount}
-
-#TODO delete section
-#Check number of reviews by product id
-table(reviews$ProductID)
-```
 
 ```{r joinproductreview}
 
@@ -344,11 +341,14 @@ productreview_test <- (left_join(review_test,
 
 
 ```
-
-
+This operation creates a combined `products` and `reviews` dataframe with ingredient content for each review as well as microdata for the `review` `Stars` rating rather than `product`'s aggregate mean rating.
 
 
 ```{r helper function factominer}
+
+#Leave github issue here as a note: #factominer issue: https://github.com/husson/FactoMineR/issues/15
+#TODO: open PR re: fix matrix transpose issue in FactoMineR
+
 add_names_to_values = function(x,colname){
 return(paste0(colname,"_",x))
 }
@@ -366,21 +366,10 @@ return(base_char)
 
 
 ```
-There is a known issue with FactoMineR predict.MCA() which causes it to create matrices which are not calcuable for cross-products
+There is a known issue with `FactoMineR` `predict.MCA()` function which causes it to create matrices which are not calcuable for cross-products. This presents an opportunity for contributing to the FactoMineR source, which the data scientist intends to do in the near future.
 
 
 ```{r ingredient matrix}
-
-#https://towardsdatascience.com/cooking-recipes-with-pca-5c33a4acb7db
-#https://stackoverflow.com/questions/40795141/pca-for-categorical-features
-#https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/
-#https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100
-#http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/
-
-
-
-#factominer issue: https://github.com/husson/FactoMineR/issues/15
-
 
 #Create one-hot matrix for ingredients in Breyers products.
 ingredindicator <- products %>% 
@@ -390,22 +379,14 @@ ingredindicator <- products %>%
                    count(row, Ingredients) %>% 
                    spread(Ingredients, n, fill = 0)
 
-#ingredindicator$ProductID <- products$ProductID
 
 #"row" is added artifactually in the course of the one-hot matrix formulation and is dropped, we also cast duplicative ingredient listings to 1's i.e., has ingredient.
-
 ingredindicator <- ingredindicator[ ,-which(names(ingredindicator) %in% c("row")) ]
 ingredindicator[ingredindicator > 0] <- 1
 
-
-#ingredindicator$traintest <- product_sample
-
-#Can use training productnames instead..
-#ingredindicator$ProductID <- products$ProductID
 ingredindicator$traintest <- product_sample
 
-
-#Here we create an aggregate table with indicator sums by train and test for each ingredient. We use this to identify non-contributing factors in either train or test. This was done in order to allow for cross products using FactoRMineR.
+#Here we create an aggregate table with indicator sums by train and test for each ingredient. We use this to identify non-contributing factors in either train or test. This was done in order to allow for cross products using FactoRMineR, again, this highlights a potential issue as in theory FactoMineR SVD should already be eliminating these non-contributing factors.
 
 ingredcounts <- aggregate(.~traintest,ingredindicator,sum)
 ingrednozeros <- ingredcounts %>% select(where(~ all(. != 0)))
@@ -420,46 +401,25 @@ ingredindicator <- ingredindicator[,-which(names(ingredindicator) %in% c("traint
 #ingred_training <- ingredindicator[product_sample==1,]
 ingred_training <- ingredindicator[product_sample==1,]
 
-#todo, remove comment if it breaks
 ingred_training <- ingred_training[,which(names(ingred_training) %in% ingrednozeros)]
 train.cats = apply(ingred_training, 2, function(x) nlevels(as.factor(x)))
 
-#TODO - ELIMINATE 0 FIELDS FOR PREDICTION MODEL
-#summary(ingred_training)
-#which(colSums(ingred_training==0) == nrow(ingred_training))
-#which(colSums(ingred_test==0) == nrow(ingred_test))
-
-#which(names(ingredindicator) %in% ingrednozeros)
-#ingred_test <- ingredindicator[product_sample==2,]
 ingred_test <- ingredindicator[product_sample==2,]
 
-#todo remove commentif breaks
 ingred_test <- ingred_test[,which(names(ingred_test) %in% ingrednozeros)]
 test.cats = apply(ingred_test, 2, function(x) nlevels(as.factor(x)))
 
 ingred_mca <- MCA(ingred_training, graph = FALSE)
 fviz_screeplot(ingred_mca, addlabels = TRUE)
 
-
 ingred_test.preprocess <- preprocess_mca(ingred_test)
 ingred_predict <- predict.MCA(object = ingred_mca,
             newdata = ingred_test.preprocess)
 
-
-
-
-
-#not worthwhile, TODO: delete
-# plot of variable categories
-# ggplot(data=mca1_vars_df, 
-#        aes(x = Dim.1, y = Dim.2, label = rownames(mca1_vars_df))) +
-#  geom_hline(yintercept = 0, colour = "gray70") +
-#  geom_vline(xintercept = 0, colour = "gray70") +
-#  geom_text(aes(colour=Variable)) +
-#  ggtitle("MCA plot of variables using R package FactoMineR")
-
-
 ```
+Here we fit an MCA model to the `products` dataset. **M**ultiple **C**orrespondence **A**nalysis is a feature engineering methodology for extracting eigenvectors from a matrix of row-factor levels rather than numeric values as is the case with PCA. This method is ideal for distilling features in the one-hot encoded `ingredient` `products` data. We see reviewing the scree plot that the first `5` eigen-values encode `r with(mca, eig[5,'cumulative percentage of variance'])` percent of the variance in the training data. This allows us to drastically reduce the complexity of our `LDA` model in the next section.
+
+
 
 ```{r LDA_training }
 
@@ -491,10 +451,6 @@ lda.fit <- MASS::lda(grouping=productreview_training$Stars, x=productreview_trai
 lda.fit$prior
 
 plot(productreview_training$Dim_4, productreview_training$Dim_3, col=productreview_training$Stars)
-
-
-str(productreview_training)
-str(productreview_test)
 
 #subset=train
 #names(productreview_training)
@@ -923,4 +879,12 @@ Our Process. (N.d.). Talenti. Retrieved March 12, 2024, from https://www.talenti
 Our Values, Activism, and Mission. (N.d.). Ben & Jerry's. Retrieved March 12, 2024, from https://www.benjerry.com/values
 
 Pond, T. (2020, Sept). Ice Cream Dataset. Kaggle. Retrieved March 11, 2024, from https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data
+
+Toledo, D. (2019, July 15). Cooking with machine learning: Dimension reduction. Medium. https://towardsdatascience.com/cooking-recipes-with-pca-5c33a4acb7db 
+
+
+#https://stackoverflow.com/questions/40795141/pca-for-categorical-features
+#https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/
+#https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100
+#http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/
 
