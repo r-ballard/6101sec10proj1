@@ -420,11 +420,10 @@ ingred_predict <- predict.MCA(object = ingred_mca,
 Here we fit an MCA model to the `products` dataset. **M**ultiple **C**orrespondence **A**nalysis is a feature engineering methodology for extracting eigenvectors from a matrix of row-factor levels rather than numeric values as is the case with PCA. This method is ideal for distilling features in the one-hot encoded `ingredient` `products` data. We see reviewing the scree plot that the first `5` eigen-values encode `r with(mca, eig[5,'cumulative percentage of variance'])` percent of the variance in the training data. This allows us to drastically reduce the complexity of our `LDA` model in the next section.
 
 
-
 ```{r LDA_training }
 
 ingred_training.mcadim <- as.data.frame(ingred_mca$ind$coord)
-#head(ingred_training.mcadim)
+
 ingred_training.mcadim['ProductID'] <- product_training['ProductID']
 ingred_training.mcadim['avg_ratings']<-product_training.labels
 
@@ -444,18 +443,9 @@ productreview_training <- productreview_training %>%
                                  "Dim_4"='Dim 4',
                                  "Dim_5"='Dim 5')
 
-#lda.fit=MASS::lda(Stars ∼ Dim_1 + Dim_2 + Dim_3 + Dim_4 + Dim_5 , data = productreview_training)
-
 lda.fit <- MASS::lda(grouping=productreview_training$Stars, x=productreview_training[,c('Dim_1','Dim_2' ,'Dim_3','Dim_4','Dim_5')])
 
-lda.fit$prior
-
-plot(productreview_training$Dim_4, productreview_training$Dim_3, col=productreview_training$Stars)
-
-#subset=train
-#names(productreview_training)
-
-#lda.fit=lda(Direction∼Lag1+Lag2 ,data=Smarket ,subset=train)
+#lda.fit$prior
 
 ingred_test.mcadim <- as.data.frame(ingred_predict$coord)
 ingred_test.mcadim['ProductID'] <- product_test['ProductID']
@@ -487,12 +477,14 @@ table(productreview_test$pred,productreview_test$Stars)
 table(productreview_test$Stars)
 
 cm <- confusionMatrix(lda.pred$class, reference = productreview_test$Stars )
-cm
-lda.pred
 
 plot(lda.fit)
-```
+cm$table
 
+names(cm)
+
+```
+With our Linear Discriminant Analysis we are able to develop a predictive model with an `Accuracy` of `r cm$overall['Accuracy']` when applied to the `product-ingredient` test set.
 
 ```{r producthistograms}
 breycol <- brandcolordf[brandcolordf$brand=='breyers','color']
