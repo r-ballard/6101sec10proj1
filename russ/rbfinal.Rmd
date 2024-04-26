@@ -67,8 +67,8 @@ Our project uses an Ice Cream dataset that was retrieved from Kaggle from the fo
 
 #hardcoded for testing
 #setwd("C:/Users/russe/Documents/github/6101sec10proj1/")
-#projwd <- getwd()
-projwd <- "C:/Users/russe/Documents/github/6101sec10proj1"
+projwd <- getwd()
+#projwd <- "C:/Users/russe/Documents/github/6101sec10proj1"
 
 datadir <- "data"
 rawdir <- "raw"
@@ -93,8 +93,6 @@ brandcolordf <- data.frame(read.csv(brandcolorpath,
                            colClasses=c("brand"="character",
                                         "color"="character",
                                         "fill"="character")))
-
-brandcolordf
 ```
 A metadata table containing color choices for the different brands has been created, this abstraction can be used for setting colors in the subsequent visualizations for standardizaiton and ease of implementation. 
 
@@ -271,13 +269,14 @@ products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
 
 ```
 
+In this preprocessing step we convert the `products$ingredients` field from a single `character` entry into a vector of characters by treating commas in the `ingredients` field as a delimiter. We then use our `ingredientrenamedf` which contains string and string replacement values and was manually prepared by the data scientist to attempt to standardize the ingredient field in the `products$ingredients` field.
+
 ```{r breyerfilter}
 products <- products[products$Brand=="breyers",]
 reviews <- reviews[reviews$Brand=="breyers",]
 ```
-Here we subset the data to only include icecream of the brand `Breyers`. This preprocessing step was elected to study the `Breyers` data more specifically.
 
-In this preprocessing step we convert the `products$ingredients` field from a single `character` entry into a vector of characters by treating commas in the `ingredients` field as a delimiter. We then use our `ingredientrenamedf` which contains string and string replacement values and was manually prepared by the data scientist to attempt to standardize the ingredient field in the `products$ingredients` field.
+Here we subset the data to only include icecream of the brand `Breyers`. This preprocessing step was elected to study the `Breyers` data more specifically for the application of MCA feature engineering and Linear Discriminant Analysis..
 
 ```{r productsplit}
 
@@ -377,7 +376,7 @@ return(base_char)
 There is a known issue with `FactoMineR` `predict.MCA()` function which causes it to create matrices which are not calcuable for cross-products. This presents an opportunity for contributing to the FactoMineR source, which the data scientist intends to do in the near future.
 
 
-```{r ingredient_matrix}
+```{r ingredient_mca}
 
 #Create one-hot matrix for ingredients in Breyers products.
 ingredindicator <- products %>% 
