@@ -36,7 +36,8 @@ pkg_vector <- c("ggplot2",
                 "FactoMineR",
                 "factoextra",
                 "tidyverse",
-                "MASS")
+                "MASS",
+                "caret")
 #
 #"MASS"
 invisible(lapply(pkg_vector, loadPkg))
@@ -65,16 +66,19 @@ Our project uses an Ice Cream dataset that was retrieved from Kaggle from the fo
 ```{r decompress_data, echo=FALSE}
 
 #hardcoded for testing
-setwd("C:/Users/russe/Documents/github/6101sec10proj1/")
-projwd <- getwd()
+#setwd("C:/Users/russe/Documents/github/6101sec10proj1/")
+#projwd <- getwd()
+projwd <- "C:/Users/russe/Documents/github/6101sec10proj1"
 
 datadir <- "data"
 rawdir <- "raw"
+imgdir <- "img"
 zipf <- "icecream.zip"
 outf <- "icecream"
 
 zippath <- file.path(projwd, datadir, rawdir, zipf, fsep='/')
 outpath <- file.path(projwd, datadir, rawdir, outf, fsep='/')
+graphpath <- file.path(projwd, datadir,imgdir, fsep="/" )
 
 unzip(zippath, exdir=outpath)
 ```
@@ -191,7 +195,7 @@ For the `reviews.csv` file, the variables in the dataset are:
 
 Regarding the dataset, there are important considerations that the author provides for users. First, "the collection of reviews on the brand websites may not be representative of overall opinion, i.e. there may be review censoring or presence of fake reviews meant to help/harm the image of the brand" (Pond, 2020). In order to combat this, the author, "intentionally chose brands that host some negative reviews on their website" (Pond, 2020). Next, the author acknowledges the parent companies of each of the brands. "Ben & Jerry's, Breyers, and Talenti are all owned by Uniever. Häagen-Dazs is owned by Froneri" (Pond, 2020). It is also important to note that, "Talenti is distinguished from the other brands as they produce gelato" (Pond, 2020).
 
-```{r colrename echo=FALSE}
+```{r colrename, echo=FALSE}
 
 products <- products %>%
             rename("Brand"=brand,
@@ -217,14 +221,9 @@ reviews <- reviews %>%
                   'IngredientsDesc'=ingredients,
                   'Texture'=texture,
                   'Likes'=likes)
-```
 
-```{r breyerfilter}
-products <- products[products$Brand=="breyers",]
-reviews <- reviews[reviews$Brand=="breyers",]
+reviewsbkp <- reviews
 ```
-Here we subset the data to only include icecream of the brand `Breyers`. This preprocessing step was elected to study the `Breyers` data more specifically.
-
 
 ```{r productandreviewsummary, results='markup'}
 xkablesummary(products, title = "Summary of the products dataset")
@@ -271,6 +270,13 @@ products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
 
 
 ```
+
+```{r breyerfilter}
+products <- products[products$Brand=="breyers",]
+reviews <- reviews[reviews$Brand=="breyers",]
+```
+Here we subset the data to only include icecream of the brand `Breyers`. This preprocessing step was elected to study the `Breyers` data more specifically.
+
 In this preprocessing step we convert the `products$ingredients` field from a single `character` entry into a vector of characters by treating commas in the `ingredients` field as a delimiter. We then use our `ingredientrenamedf` which contains string and string replacement values and was manually prepared by the data scientist to attempt to standardize the ingredient field in the `products$ingredients` field.
 
 ```{r productsplit}
@@ -306,7 +312,7 @@ Similar to above, but for the `reviews` dataset.
 ```{r joinproductreview}
 
 productreview <- left_join(reviews,
-                           products %>% select(ProductID,
+                           products %>% dplyr::select(ProductID,
                                                  HAS_CARAMEL,
                                                  HAS_CHOCOLATE,
                                                  HAS_FRUIT,
@@ -316,8 +322,10 @@ productreview <- left_join(reviews,
                                                  Ingredients),
                            by="ProductID", multiple="all")
 
+names(products)
+
 productreview_training <- (left_join(review_training,
-                           product_training %>% select(ProductID,
+                           product_training %>% dplyr::select(ProductID,
                                                  HAS_CARAMEL,
                                                  HAS_CHOCOLATE,
                                                  HAS_FRUIT,
@@ -328,7 +336,7 @@ productreview_training <- (left_join(review_training,
                            by="ProductID", multiple="all"))
   
 productreview_test <- (left_join(review_test,
-                           product_test %>% select(ProductID,
+                           product_test %>% dplyr::select(ProductID,
                                                  HAS_CARAMEL,
                                                  HAS_CHOCOLATE,
                                                  HAS_FRUIT,
@@ -344,7 +352,7 @@ productreview_test <- (left_join(review_test,
 This operation creates a combined `products` and `reviews` dataframe with ingredient content for each review as well as microdata for the `review` `Stars` rating rather than `product`'s aggregate mean rating.
 
 
-```{r helper function factominer}
+```{r helperfunctionfactominer}
 
 #Leave github issue here as a note: #factominer issue: https://github.com/husson/FactoMineR/issues/15
 #TODO: open PR re: fix matrix transpose issue in FactoMineR
@@ -369,7 +377,7 @@ return(base_char)
 There is a known issue with `FactoMineR` `predict.MCA()` function which causes it to create matrices which are not calcuable for cross-products. This presents an opportunity for contributing to the FactoMineR source, which the data scientist intends to do in the near future.
 
 
-```{r ingredient matrix}
+```{r ingredient_matrix}
 
 #Create one-hot matrix for ingredients in Breyers products.
 ingredindicator <- products %>% 
@@ -389,7 +397,7 @@ ingredindicator$traintest <- product_sample
 #Here we create an aggregate table with indicator sums by train and test for each ingredient. We use this to identify non-contributing factors in either train or test. This was done in order to allow for cross products using FactoRMineR, again, this highlights a potential issue as in theory FactoMineR SVD should already be eliminating these non-contributing factors.
 
 ingredcounts <- aggregate(.~traintest,ingredindicator,sum)
-ingrednozeros <- ingredcounts %>% select(where(~ all(. != 0)))
+ingrednozeros <- ingredcounts %>% dplyr::select(where(~ all(. != 0)))
 ingrednozeros <- colnames(ingrednozeros)
 
 col_names <- names(ingredindicator)
@@ -410,15 +418,17 @@ ingred_test <- ingred_test[,which(names(ingred_test) %in% ingrednozeros)]
 test.cats = apply(ingred_test, 2, function(x) nlevels(as.factor(x)))
 
 ingred_mca <- MCA(ingred_training, graph = FALSE)
-fviz_screeplot(ingred_mca, addlabels = TRUE)
 
 ingred_test.preprocess <- preprocess_mca(ingred_test)
 ingred_predict <- predict.MCA(object = ingred_mca,
             newdata = ingred_test.preprocess)
+            
+cumvar <- with(ingred_mca, eig[5,'cumulative percentage of variance'])
 
+fviz_screeplot(ingred_mca, addlabels = TRUE)
 ```
-Here we fit an MCA model to the `products` dataset. **M**ultiple **C**orrespondence **A**nalysis is a feature engineering methodology for extracting eigenvectors from a matrix of row-factor levels rather than numeric values as is the case with PCA. This method is ideal for distilling features in the one-hot encoded `ingredient` `products` data. We see reviewing the scree plot that the first `5` eigen-values encode `r with(mca, eig[5,'cumulative percentage of variance'])` percent of the variance in the training data. This allows us to drastically reduce the complexity of our `LDA` model in the next section.
 
+Here we fit an MCA model to the `products` dataset. **M**ultiple **C**orrespondence **A**nalysis is a feature engineering methodology for extracting eigenvectors from a matrix of row-factor levels rather than numeric values as is the case with PCA. This method is ideal for distilling features in the one-hot encoded `ingredient` `products` data. We see reviewing the scree plot that the first `5` eigen-values encode `r cumvar` percent of the variance in the training data. This allows us to drastically reduce the complexity of our `LDA` model in the next section.
 
 ```{r LDA_training }
 
@@ -428,7 +438,7 @@ ingred_training.mcadim['ProductID'] <- product_training['ProductID']
 ingred_training.mcadim['avg_ratings']<-product_training.labels
 
 productreview_training <- left_join(productreview_training,
-                                   ingred_training.mcadim %>% select('Dim 1',
+                                   ingred_training.mcadim %>% dplyr::select('Dim 1',
                                                                      'Dim 2',
                                                                      'Dim 3',
                                                                      'Dim 4',
@@ -452,7 +462,7 @@ ingred_test.mcadim['ProductID'] <- product_test['ProductID']
 ingred_test.mcadim['avg_ratings']<-product_test.labels
 
 productreview_test <- left_join(productreview_test,
-                                   ingred_test.mcadim %>% select('Dim 1',
+                                   ingred_test.mcadim %>% dplyr::select('Dim 1',
                                                                      'Dim 2',
                                                                      'Dim 3',
                                                                      'Dim 4',
@@ -492,7 +502,7 @@ breyfill <- brandcolordf[brandcolordf$brand=='breyers','fill']
 
 
 ggplot(data = productreview, aes (x = Stars, color=Brand, fill = Brand)) + 
-  geom_histogram(binwidth=1,boundary=-.5) +
+  geom_bar() +
   labs(title="Distribution of Star Ratings \nFor Icecream Brand: Breyers",
    x="Star Rating",
    y="Review Count\n(in Thousands)") +
@@ -816,8 +826,11 @@ word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsF
 
 barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='lightgreen', main='Frequently Used Words in Breyers Reviews', ylab= 'Word Frequencies')
 ```
+```{r reloadreviews}
+reviews <- reviewsbkp 
+```
 
-```{r}
+```{r chocowordfreq}
 cccd_bj <- reviews[reviews$ProductID == "50_bj", "Review"]
 corpus <- Corpus(VectorSource(cccd_bj))
 
