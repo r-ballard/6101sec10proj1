@@ -67,8 +67,8 @@ Our project uses an Ice Cream dataset that was retrieved from Kaggle from the fo
 
 #hardcoded for testing
 #setwd("C:/Users/russe/Documents/github/6101sec10proj1/")
-projwd <- getwd()
-#projwd <- "C:/Users/russe/Documents/github/6101sec10proj1"
+#projwd <- getwd()
+projwd <- "C:/Users/russe/Documents/github/6101sec10proj1"
 
 datadir <- "data"
 rawdir <- "raw"
@@ -105,10 +105,7 @@ ingredientrenamedf <- data.frame(read.csv(ingredientpath,
                            colClasses=c("from_ingredient"="character",
                                         "to_ingredient"="character")))
 
-ingredientrenamedf
-
-
-
+head(ingredientrenamedf)
 ```
 A metadata table containing ingredient mappings. This dataframe can be used in precleaning to  reduce the number of ingredients in the ingredients field and strips special characters.
 
@@ -220,7 +217,7 @@ reviews <- reviews %>%
                   'Texture'=texture,
                   'Likes'=likes)
 
-reviewsbkp <- reviews
+reviews_bkp <- reviews
 ```
 
 ```{r productandreviewsummary, results='markup'}
@@ -243,6 +240,8 @@ products$HAS_CHOCOLATE <- as.factor(as.integer(grepl(pattern=paste(chocvec,colla
 
 products$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = products$ProductName) | 
                                 grepl(pattern = "BAR", x = products$Subhead)))
+
+products_bkp <- products
 ```
 
 By using `grepl` we are able to create simple binary indicators for ingredient content in the icecream.
@@ -270,17 +269,17 @@ products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
 ```
 
 In this preprocessing step we convert the `products$ingredients` field from a single `character` entry into a vector of characters by treating commas in the `ingredients` field as a delimiter. We then use our `ingredientrenamedf` which contains string and string replacement values and was manually prepared by the data scientist to attempt to standardize the ingredient field in the `products$ingredients` field.
-
 ```{r breyerfilter}
 products <- products[products$Brand=="breyers",]
 reviews <- reviews[reviews$Brand=="breyers",]
+#productreview <-productreview[productreview$Brand=="breyers",]
 ```
 
-Here we subset the data to only include icecream of the brand `Breyers`. This preprocessing step was elected to study the `Breyers` data more specifically for the application of MCA feature engineering and Linear Discriminant Analysis..
-
+Here we subset the data to only include icecream of the brand `Breyers`. This preprocessing step was elected to study the `Breyers` data more specifically for the application of MCA feature engineering and Linear Discriminant Analysis.
 ```{r productsplit}
 
 product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.67, 0.33))
+
 
 product_training.labels <- products[product_sample==1, which(names(products) %in% c("Rating"))]
 product_training <- products[product_sample==1, -which(names(products) %in% c("Rating"))]
@@ -321,7 +320,7 @@ productreview <- left_join(reviews,
                                                  Ingredients),
                            by="ProductID", multiple="all")
 
-names(products)
+productreview_bkp <- productreview
 
 productreview_training <- (left_join(review_training,
                            product_training %>% dplyr::select(ProductID,
@@ -349,7 +348,6 @@ productreview_test <- (left_join(review_test,
 
 ```
 This operation creates a combined `products` and `reviews` dataframe with ingredient content for each review as well as microdata for the `review` `Stars` rating rather than `product`'s aggregate mean rating.
-
 
 ```{r helperfunctionfactominer}
 
@@ -495,6 +493,13 @@ names(cm)
 ```
 With our Linear Discriminant Analysis we are able to develop a predictive model with an `Accuracy` of `r cm$overall['Accuracy']` when applied to the `product-ingredient` test set.
 
+
+```{r reload}
+reviews <- reviews_bkp 
+products <- products_bkp
+productreview <- productreview_bkp
+```
+
 ```{r producthistograms}
 breycol <- brandcolordf[brandcolordf$brand=='breyers','color']
 breyfill <- brandcolordf[brandcolordf$brand=='breyers','fill']
@@ -517,11 +522,13 @@ ggplot(data = productreview, aes (x = Stars, color=Brand, fill = Brand)) +
 ```{r breyerproductratings}
 #Color and fill are inverted here for readability
 
+products_brey <- products[products$Brand=='breyers',]
+
 #sortorder
-ratingorder <- products[order(products$Rating, decreasing = TRUE),"ProductID"]
+ratingorder <- products_brey[order(products_brey$Rating, decreasing = TRUE),"ProductID"]
 
 
-ggplot(products, aes(x=ProductID, y=Rating)) +
+ggplot(products_brey, aes(x=ProductID, y=Rating)) +
   #geom_point(col=paste(breyfill), fill=paste(breycol), alpha=0.7) +
   geom_point(aes(col=HAS_CHOCOLATE), alpha=0.7) +
   labs(x="ProductID", y='Rating') +
@@ -532,7 +539,7 @@ ggplot(products, aes(x=ProductID, y=Rating)) +
   scale_color_manual(values = c("grey","brown"))
 
 
-ggplot(products, aes(x=ProductID, y=Rating)) +
+ggplot(products_brey, aes(x=ProductID, y=Rating)) +
   #geom_point(col=paste(breyfill), fill=paste(breycol), alpha=0.7) +
   geom_point(aes(col=HAS_CARAMEL)) +
   labs(x="ProductID", y='Rating') +
@@ -652,6 +659,9 @@ Describing the overall data by using the the `describe()` function to highlight 
 ```{r contingencyplot}
 
 brandrating_contingency_table<-table(productreview$Brand,productreview$Stars, dnn=c("Brand", "Star Rating"))
+
+brandrating_contingency_table<-table(productreview$Brand,productreview$Stars, dnn=c("Brand", "Star Rating"))
+
 
 brandrating_contingency_table
 prop.table(brandrating_contingency_table,margin=1)
@@ -824,9 +834,6 @@ word_freq <- sort(colSums(matrix), decreasing=TRUE)
 word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsFactors = FALSE)
 
 barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='lightgreen', main='Frequently Used Words in Breyers Reviews', ylab= 'Word Frequencies')
-```
-```{r reloadreviews}
-reviews <- reviewsbkp 
 ```
 
 ```{r chocowordfreq}
