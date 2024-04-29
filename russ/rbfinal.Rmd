@@ -236,8 +236,8 @@ products$HAS_FRUIT <- as.factor(as.integer(grepl(pattern=paste(fruitvec,collapse
 chocvec <- c("CHOCOLAT","COCO")
 products$HAS_CHOCOLATE <- as.factor(as.integer(grepl(pattern=paste(chocvec,collapse="|"), x=products$Ingredients)))
 
-products$IS_BAR <- as.factor(as.integer(grepl(pattern = "BAR", x = products$ProductName) | 
-                                grepl(pattern = "BAR", x = products$Subhead)))
+products$IS_BAR <- as.factor(as.integer(grepl(pattern = "\\bBAR\\b", x = products$ProductName, ignore.case = TRUE) | 
+                                grepl(pattern = "\\bBAR\\b", x = products$Subhead, ignore.case = TRUE)))
 
 products_bkp <- products
 ```
@@ -518,62 +518,8 @@ reviews <- reviews_bkp
 products <- products_bkp
 productreview <- productreview_bkp
 ```
-With the mixed model MCA-LDA complete we load clean backups to the `reviews`, `products`, and `productreview` data for 
+With the mixed model MCA-LDA complete we load clean backups to the `reviews`, `products`, and `productreview` data for exploratory analysis and linear modeling.
 
-
-```{r producthistograms}
-breycol <- brandcolordf[brandcolordf$brand=='breyers','color']
-breyfill <- brandcolordf[brandcolordf$brand=='breyers','fill']
-
-
-ggplot(data = productreview, aes (x = Stars, color=Brand, fill = Brand)) + 
-  geom_bar() +
-  labs(title="Distribution of Star Ratings \nFor Icecream Brand: Breyers",
-   x="Star Rating",
-   y="Review Count\n(in Thousands)") +
-  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
-  scale_fill_manual(values=breyfill) +
-  scale_colour_manual(values=breycol) +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  theme(legend.position="none")
-
-```
-
-
-```{r breyerproductratings}
-#Color and fill are inverted here for readability
-
-products_brey <- products[products$Brand=='breyers',]
-
-#sortorder
-ratingorder <- products_brey[order(products_brey$Rating, decreasing = TRUE),"ProductID"]
-
-
-ggplot(products_brey, aes(x=ProductID, y=Rating)) +
-  #geom_point(col=paste(breyfill), fill=paste(breycol), alpha=0.7) +
-  geom_point(aes(col=HAS_CHOCOLATE), alpha=0.7) +
-  labs(x="ProductID", y='Rating') +
-  labs(title="Average Ratings for Each Individual Breyers products") + 
-  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  scale_x_discrete(limits=ratingorder) +
-  scale_color_manual(values = c("grey","brown"))
-
-
-ggplot(products_brey, aes(x=ProductID, y=Rating)) +
-  #geom_point(col=paste(breyfill), fill=paste(breycol), alpha=0.7) +
-  geom_point(aes(col=HAS_CARAMEL)) +
-  labs(x="ProductID", y='Rating') +
-  labs(title="Average Ratings for Each Individual Breyers products") + 
-  theme(axis.text.x = element_text(angle=90, hjust=1, size = 5)) +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  scale_x_discrete(limits=ratingorder) +
-  scale_color_manual(values = c("grey","chocolate"))
-```
-
-
-
-Using `grepl` we are able to implement regex matching to create additional binary indicator fields for ingredients in the `products` dataframe. 
 
 # Exploratory Data Analysis
 
@@ -582,9 +528,6 @@ Using `grepl` we are able to implement regex matching to create additional binar
 We will explore the Ice Cream dataset by creating graphs, performing tests, and finding the measures of central tendency and variation. First, we'll look at the overall dataset, and then the individual datasets of each of the four brands.
 
 ```{r}
-
-
-#TODO DELETE, unnecessary with Breyers filtering above
 library(ggplot2)
 ggplot(data=products, aes(Rating)) +
   geom_histogram(col='blue', fill='lightblue', alpha=0.7) +
@@ -595,7 +538,7 @@ ggplot(data=products, aes(Rating)) +
 
 This histogram shows the overall ratings of all ice-cream products across all 4 brands of ice-cream. We can see that there is a high frequency of ratings within the 4 - 5 star range. Based on the histogram above, we can see a left skewed distribution. To further test the skewness, we will perform a QQ plot.
 
-```{r summarystatratings}
+```{r}
 sd.ratings <- sd(products$Rating)
 mean.ratings <- mean(products$Rating)
 sd.ratings
@@ -676,8 +619,6 @@ loadPkg("Hmisc")
 describe(products$Rating)
 ```
 Describing the overall data by using the the `describe()` function to highlight the ratings column.
-
-
 
 ### Breyers
 
@@ -788,103 +729,452 @@ summary_by_brand
 
 Here we see that the average rating for the Breyers brand is the lowest among the other brands in the dataset with an average rating of 3.96 compared to a rating of 4.00+ for the other brands.
 
-```{r results='markup'}
-breyers_products <- subset(products, Brand == "breyers")
-sorted_breyers <- breyers_products[order(breyers_products$Rating), ]
-lowest_breyers <- head(sorted_breyers[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
+### Comparative Analysis
 
-lowest_breyers
-```
-
-Here we see the lowest 5 rated products that Breyers offers.
-
-In order for Breyers to help boost their average ratings. We would need to see the products that the other brands are struggling with to see where they should target.
+Further statistical comparisons will be conducted to compare the four brands in order to gain information for further tests.
 
 ```{r results='markup'}
-bj_products <- subset(products, Brand == "bj")
-sorted_bj <- bj_products[order(bj_products$Rating), ]
-lowest_bj <- head(sorted_bj[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
-
-hd_products <- subset(products, Brand == "hd")
-sorted_hd <- hd_products[order(hd_products$Rating), ]
-lowest_hd <- head(sorted_hd[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
-
-tal_products <- subset(products, Brand == "talenti")
-sorted_tal <- tal_products[order(tal_products$Rating), ]
-lowest_tal <- head(sorted_tal[, c("ProductID", "ProductName", "Rating", "RatingCount")], n = 5)
-
-lowest_bj
-lowest_hd
-lowest_tal
+ggplot(products, aes(x=Brand, y=Rating)) +
+  geom_boxplot() +
+  labs(title = "Distribution of Ratings Across Brands")
 ```
 
-Here we see that there is similarities of products across brands such as the flavors of Chocolate Chip Cookie Dough and variations of a coffee flavor.
+With the box plot above, we see the distribution of the ratings across the four brands ice cream. We see that the first and third quartiles and the median for Ben and Jerry's, Häagen-Dazs, and Talenti all fall above the rating of 4 mark. Breyer's first quartile falls below the rating of 4 line. Overall, we see that the Breyer's data performs the worse compared to the other brands. 
 
-Lets focus on the product, Chocolate Chip Cookie Dough.
+```{r results='markup'}
+ggplot(products, aes(x=Rating, fill=Brand)) +
+  geom_density(alpha=0.5) +
+  labs(title = "Density of Ratings Across Brands")
+```
 
-What are the common complaints that arose from the reviews?
+With the density plot above, we see the data in a continuous and smooth representation. We see that the density is heavily concentrated in the right side of the graph. Breyers still appear to be the shortest hill among the other brands at the rating of 4 area. The data also shows that Breyers produce a second hill around the 3 mark that is the tallest among the other brands.
+
+Now, we will be determining if there is a significant difference between the means of Breyers and the other three brands individually through pairwise t-testing with a 0.05 significance level.
+
+For these t-tests:
+
+* `Null Hypothesis`: There is no significant difference between the means of Breyers and the other brand.
+* `Alternative Hypothesis`: There is a significant difference between the means of Breyers and the other brand.
+
+```{r t-test, results='markup'}
+breyers_ratings <- products$Rating[products$Brand == "breyers"]
+bj_ratings <- products$Rating[products$Brand == "bj"]
+hd_ratings <- products$Rating[products$Brand == "hd"]
+talenti_ratings <- products$Rating[products$Brand == "talenti"]
+
+t_test_bj <- t.test(breyers_ratings, bj_ratings)
+t_test_hd <- t.test(breyers_ratings, hd_ratings)
+t_test_tal <- t.test(breyers_ratings, talenti_ratings)
+
+t_test_bj
+t_test_hd
+t_test_tal
+```
+
+Based on the results of the t-tests, we see that all three p-values are less than the 0.05 significance level. Therefore, we will reject the null hypothesis and conclude that there is a significant difference between the means of Breyers and each of the three other brands.
+
+Next, we will be determining if there is a significant difference between the medians of Breyers and the other three brands by using the Wilcoxon Signed-Rank test with a 0.05 significance level.
+
+For these tests:
+
+* `Null Hypothesis`: There is no significant difference between the medians of Breyers and the other brand.
+* `Alternative Hypothesis`: There is a significant difference between the medians of Breyers and the other brand.
+
+```{r wilcox_test, results='markup'}
+wilcox_test_bj <- wilcox.test(breyers_ratings, bj_ratings)
+wilcox_test_hd <- wilcox.test(breyers_ratings, hd_ratings)
+wilcox_test_tal <- wilcox.test(breyers_ratings, talenti_ratings)
+
+wilcox_test_bj
+wilcox_test_hd
+wilcox_test_tal
+```
+
+Based on the results, we find that all p-values are less than the significance level of 0.05. Therefore, we will reject the null hypothesis and conclude that there is a significance difference between the medians of Breyers and the other three brands.
+
+Next, we will be creating a linear regression model to allow us to make predictions on what Breyers should do to improve their ratings.
+
+## Modeling
+
+```{r regression_model, results='markup'}
+lm_model <- lm(Rating ~ Brand + HAS_CARAMEL + HAS_CHOCOLATE + HAS_FRUIT + HAS_VANILLA + HAS_ORGANIC + IS_BAR, data = products)
+
+summary(lm_model)
+```
+
+Above we see how the linear regression model is structured.
+
+```{r results='markup'}
+subset_data <- subset(products, Brand %in% c("bj", "hd", "talenti", "breyers") & Rating == 5)
+
+ingredient_categories <- subset_data[, c("Brand", "ProductName", "Rating",  "HAS_CARAMEL", "HAS_CHOCOLATE", "HAS_FRUIT", "HAS_VANILLA", "HAS_ORGANIC", "IS_BAR")]
+
+product_ingredients <- unique(ingredient_categories)
+
+product_ingredients
+```
+
+Based on the table above, we see the products across all 4 brands that have an average rating of 5 with the ingredient categories that each have.
+
+We see that there are no products across all 4 brands that have organic ingredients or is a bar. 1 product that has caramel and 1 product that has fruit. Then many products that have Chocolate and Vanilla.
+
+We will now predict the ratings of ice cream products that contains a different combination of ingredient categories to see which would result in a high rating.
+
+The different ingredient categories are as follows:
+
+* Has Caramel
+* Has Chocolate
+* Has Fruit
+* Has Vanilla
+* Has Organic Ingredients
+* Is a Bar
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Chocolate",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 0,
+  HAS_VANILLA = 0,
+  HAS_ORGANIC = 0,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+If Breyers were to introduce a product that contains a chocolate ingredient by itself, the predicted rating for it would be `r predicted_ratings`. We see that having a product that contains chocolate is a good indicator for a good rating.
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Vanilla",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 0,
+  HAS_FRUIT = 0,
+  HAS_VANILLA = 1,
+  HAS_ORGANIC = 0,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+On the other hand, if Breyers were to introduce a new product that contains a vanilla ingredient by itself, the predicted rating for it would be `r predicted_ratings`. Comparing vanilla against chocolate, we see that vanilla performs the poorly in terms of predicted ratings.
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Chocolate/Vanilla",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 0,
+  HAS_VANILLA = 1,
+  HAS_ORGANIC = 0,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+If Breyers were to include both chocolate and vanilla ingredients into a new product, then the predicted rating would be `r predicted_ratings`. The result is not as good for ratings.
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Chocolate with Caramel",
+  HAS_CARAMEL = 1,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 0,
+  HAS_VANILLA = 0,
+  HAS_ORGANIC = 0,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+If Breyers were to introduce a new product that contains caramel and chocolate, then the predicted rating would be `r predicted_ratings`. 
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Organic Chocolate",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 0,
+  HAS_VANILLA = 0,
+  HAS_ORGANIC = 1,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+If Breyers were to introduce a new product that contains chocolate and organic ingredients, then the predicted rating would be `r predicted_ratings`.
+
+```{r results='markup'}
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Chocolate/Vanilla",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 1,
+  HAS_VANILLA = 0,
+  HAS_ORGANIC = 1,
+  IS_BAR = 1
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+predicted_ratings
+```
+
+For Breyers to achieve a high predicted rating based on the linear regression model, they would need to include chocolate, fruit, and organic ingredients in the form of a bar, which would earn a predicted rating of `r predicted_ratings`.
+
+```{r match_possible_products, results='markup'}
+exact_match_products <- products[products$HAS_CHOCOLATE == 1 & products$HAS_FRUIT == 1 & products$HAS_ORGANIC == 1 & products$IS_BAR == 1, c("Brand", "ProductName", "Rating")]
+
+exact_match_products
+```
+
+Finding products that Breyers could see from other brands as well as themselves to improve on and produce a product to achieve a high rating with. From the linear regression model, to achieve the highest rating from the predictive model, the product would need to have chocolate, fruit, and organic ingredients in the form of a bar. However, there are no products that match these specifications in the dataset.
+
+Lets try to dissect each category to find possible products to influence the new product or to improve Breyers' existing products.
+```{r match1, results='markup'}
+test_match1 <- products[products$HAS_CHOCOLATE == 1 & products$HAS_FRUIT == 1, c("Brand", "ProductName", "Rating")]
+
+test_match1
+
+new_data <- data.frame(
+  Brand = "breyers",
+  Name = "Chocolate/Vanilla",
+  HAS_CARAMEL = 0,
+  HAS_CHOCOLATE = 1,
+  HAS_FRUIT = 1,
+  HAS_VANILLA = 0,
+  HAS_ORGANIC = 0,
+  IS_BAR = 0
+)
+
+new_data$HAS_CARAMEL <- as.factor(new_data$HAS_CARAMEL)
+new_data$HAS_CHOCOLATE <- as.factor(new_data$HAS_CHOCOLATE)
+new_data$HAS_FRUIT <- as.factor(new_data$HAS_FRUIT)
+new_data$HAS_VANILLA <- as.factor(new_data$HAS_VANILLA)
+new_data$HAS_ORGANIC <- as.factor(new_data$HAS_ORGANIC)
+new_data$IS_BAR <- as.factor(new_data$IS_BAR)
+
+predicted_ratings <- predict(lm_model, newdata = new_data)
+```
+
+Finding products that have chocolate and fruit ingredients, we see that there are 17 products, which two are Breyers products. To see if we can improve these products we need to consider the predicted rating for the improvement, which would be `r predicted_ratings`. Since the predicted rating is lower than the ratings of their existing products, it is best to not pursue changing the product.
+
+```{r match2, results='markup'}
+test_match2 <- products[products$HAS_CHOCOLATE == 1 & products$HAS_ORGANIC == 1, c("Brand", "ProductName", "Rating")]
+
+test_match2
+```
+
+Finding products that has chocolate and organic ingredients, we see that only result comes up from Talenti.
+
+```{r match3, results='markup'}
+test_match3 <- products[products$HAS_FRUIT == 1 & products$HAS_ORGANIC == 1, c("Brand", "ProductName", "Rating")]
+
+test_match3
+```
+
+Finding products that has fruits and organic ingredients, we see that there are no products that contain these ingredient categories.
+
+```{r match4, results='markup'}
+test_match4 <- products[products$HAS_CHOCOLATE == 1 & products$HAS_FRUIT == 1 & products$IS_BAR == 1, c("Brand", "ProductName", "Rating")]
+
+test_match4
+```
+
+Finding products that has chocolate and fruit ingredients that is also a bar, provides us one match from Häagen-Dazs.
+
+```{r match5, results='markup'}
+find_bars <- products[products$Brand == "breyers" & products$IS_BAR == 1, c("ProductName", "Rating")]
+
+find_bars
+```
+
+The bars that Breyers currently offer is their CarbSmart products. According to Breyers' website, their "CarbSmart products prove that fewer carbs [does] not mean less taste. ... At 3-5g net carbs and 60-150 calories per serving, you can treat yourself to a scoop without the guilt" ("CarbSmart", n.d.). Given the name of the product line, not everyone would be inclined to purchase the product since they are not in a low-carb diet. Even those that are purchasing from this product line love the products, Breyers should consider introducing regular-style bars.
+
+## Introduction of a New Product: Ice Cream Bars
+
+```{r results='markup'}
+highrated_choco_breyers <- subset(products, Brand == "breyers" & Rating >= 4.5 & HAS_CHOCOLATE == 1, select = c(ProductName, Rating))
+
+highrated_choco_breyers
+```
+
+Bringing up the products that Breyers makes that has chocolate and is rated 4.5, we see the list above.
+
+```{r results='markup'}
+highrated_fruit_breyers <- subset(products, Brand == "breyers" & Rating >= 4.5 & HAS_FRUIT == 1, select = c(ProductName, Rating))
+
+highrated_fruit_breyers
+```
+
+For Breyers products that contain fruit ingredients that have a rating of 4.5 and above, only one product comes up, Raspberry Cheesecake Gelato Indulgences.
+
+```{r results='markup'}
+highrated_organic <- subset(products, Rating >= 4.0 & HAS_ORGANIC == 1, select = c(ProductName, Rating))
+
+highrated_organic
+```
+
+When it comes to organic ingredients, Breyers does not use any organic ingredients (at least listed in their ingredients). Therefore, we will check products from other brands that has organic ingredients and have a rating of 4.0 or more. From this we can see the products that Breyers can consider using the ingredients for their new product.
+
+Based on the three categories, we can suggest that Breyers incorporates the product ingredients of the Products `Chocolate`, `Raspberry Cheesecake Gelato Indulgences`, and `Organic Chocolate Mousse Gelato`.
+
+Let's look at the ingredients used in Breyers' Bar products
+```{r results='markup'}
+breyers_products <- subset(products, Brand == "breyers" & IS_BAR == 1, select = c("ProductName", "Ingredients"))
+
+breyers_products
+```
+
+We see the Breyers' bar products and its ingredients. Lets see the frequencies of each ingredient in these 5 products.
+
 ```{r}
-cccd_breyers <- reviews[reviews$ProductID == "49_breyers", "Review"]
-corpus <- Corpus(VectorSource(cccd_breyers))
+#install.packages("tm")
+library(tm)
 
-corpus <- tm_map(corpus, tolower)
-corpus <- tm_map(corpus, removePunctuation)
-corpus <- tm_map(corpus, removeNumbers)
-corpus <- tm_map(corpus, removeWords, stopwords("english"))
-corpus <- tm_map(corpus, removeWords, c("ice", "cookie", "dough", "cream", "breyers", "like", 'just', 'chocolate', 'chip', 'will', 'one'))
-corpus <- tm_map(corpus, stripWhitespace)
-
-dtm <- DocumentTermMatrix(corpus)
-matrix <- as.matrix(dtm)
-
-word_freq <- sort(colSums(matrix), decreasing=TRUE)
-
-word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsFactors = FALSE)
-
-barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='lightgreen', main='Frequently Used Words in Breyers Reviews', ylab= 'Word Frequencies')
+multi_word_ingredients <- c("coconut oil", "maltitol syrup", "soybean oil", "dutched cocoa", "sodium caseinate", "calcium carbonate", "soluble corn fiber", "natural flavor", "vegetable gums", "carob bean", "soy lecithin", "mono and diglycerides", "acesulfame potassium", "fudge swirl", "corn syrup", "high fructose corn syrup", "lactic acid", "potassium sorbate", "carob bean gum", "guar gum", "color added", "caramel swirl", "nonfat milk solids", "sodium citrate", "modified food starch")
 ```
 
-```{r chocowordfreq}
-cccd_bj <- reviews[reviews$ProductID == "50_bj", "Review"]
-corpus <- Corpus(VectorSource(cccd_bj))
+```{r token_freq, results='markup'}
+products <- products %>% mutate_if(is.character, utf8::utf8_encode)
 
-corpus <- tm_map(corpus, tolower)
-corpus <- tm_map(corpus, removePunctuation)
-corpus <- tm_map(corpus, removeNumbers)
-corpus <- tm_map(corpus, removeWords, stopwords("english"))
-corpus <- tm_map(corpus, removeWords, c("ice", "cookie", "dough", "cream", "core", "like", 'just', 'chocolate', 'chip','ben', "'s", 'one'))
-corpus <- tm_map(corpus, stripWhitespace)
+preprocess_text <- function(text) {
+  text <- tolower(text)
+  
+  text <- gsub("[[:punct:]]", " ", text)
+  
+  text <- gsub("\\b\\d+\\b", "", text)
+  
+  text <- gsub("\\s+", " ", text)
 
-dtm <- DocumentTermMatrix(corpus)
-matrix <- as.matrix(dtm)
+  for (ingredient in multi_word_ingredients) {
+    text <- gsub(ingredient, gsub(" ", "-", ingredient), text)
+  }
+  
+  return(text)
+}
 
-word_freq <- sort(colSums(matrix), decreasing=TRUE)
+bar_ingredients <- subset(products, Brand == "breyers" & IS_BAR == 1, select = c("Ingredients"))
 
-word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsFactors = FALSE)
+bar_ingredients$Ingredients <- lapply(bar_ingredients$Ingredients, preprocess_text)
 
-barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='black', main="Frequently Used Words in Ben & Jerry's Reviews", ylab= 'Word Frequencies')
+all_ingredients <- paste(bar_ingredients$Ingredients, collapse = " ")
+
+tokenized_ingredients <- unlist(strsplit(all_ingredients, "\\s+"))
+
+exclude_words <- c("with", "high", "processed", "alkali", "tapioca", "preservative", "for", "color")
+
+tokenized_ingredients <- tokenized_ingredients[!tokenized_ingredients %in% exclude_words]
+
+ingredient_freq <- table(tokenized_ingredients)
+
+ingredient_freq_df <- data.frame(ingredient = names(ingredient_freq), frequency = as.numeric(ingredient_freq))
+
+ingredient_freq_df <- ingredient_freq_df[order(ingredient_freq_df$frequency, decreasing = TRUE), ]
+row.names(ingredient_freq_df) <- NULL
+
+ggplot(ingredient_freq_df, aes(x = reorder(ingredient, -frequency), y = frequency)) +
+  geom_bar(stat = "identity", fill = "lightgreen") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Ingredients", y = "Frequency", title = "Ingredient Frequencies")
+
 ```
 
-```{r}
-cccd_tal <- reviews[reviews$ProductID == "9_talenti", "Review"]
-corpus <- Corpus(VectorSource(cccd_tal))
+We see the frequencies of each ingredient from Breyers' bar products. We will take this into consideration when deciding what ingredients to consider for the new product.
 
-corpus <- tm_map(corpus, tolower)
-corpus <- tm_map(corpus, removePunctuation)
-corpus <- tm_map(corpus, removeNumbers)
-corpus <- tm_map(corpus, removeWords, stopwords("english"))
-corpus <- tm_map(corpus, removeWords, c("ice", "cookie", "dough", "cream", "gelato", "like", 'just', 'chocolate', 'chip', 'one', 'talenti', 'will'))
-corpus <- tm_map(corpus, stripWhitespace)
+```{r results='markup'}
+product_ids <- c("3_breyers", "27_breyers", "28_talenti")
+product_subset <- subset(products, ProductID %in% product_ids, select = c("ProductName", "Ingredients"))
 
-dtm <- DocumentTermMatrix(corpus)
-matrix <- as.matrix(dtm)
-
-word_freq <- sort(colSums(matrix), decreasing=TRUE)
-
-word_freq_df <- data.frame(word = names(word_freq), freq = word_freq, stringsAsFactors = FALSE)
-
-barplot(word_freq_df[1:20,]$freq, las=2, names.arg=word_freq_df[1:20,]$word, col='chocolate', main="Frequently Used Words in Talenti Reviews", ylab= 'Word Frequencies')
+product_subset
 ```
+
+Here we can see the ingredients of the three products that Breyers should consider when creating the new product.
+
+Altogether, we can suggest that Breyers create the product `Organic Chocolate Raspberry Bar` to help improve their ratings. This product should the following ingredients:
+
+* `Organic Milk`
+* `Coconut Oil`
+* `Water`
+* `Organic Cream`
+* `Organic Cane Sugar`
+* `Organic Chocolate`
+* `Natural Flavor`
+* `Organic Dextrose`
+* `Organic Butter`
+* `Raspberry Puree Concentrate`
+* `Organic Carob Bean Gum`
+* `Mono and Diglycerides`
+* `Whey`
+* `Salt`
+
+Here are ingredients that were considered after analyzing the ingredients of the other products. This is not a complete  exhaustive list of ingredients to be used, but should be considered in order to achieve the ratings predicted by our model. More or less ingredients can be used, to make product taste up to their standards.
+
+
+# References
+
+About Breyers History. (N.d.). Breyers. Retrieved March 12, 2024, from https://www.breyers.com/us/en/about.html
+
+CarbSmart. (N.d). Breyers. Retrieved April 15, 2024, from https://www.breyers.com/us/en/products/carbsmart.html
+
+Pond, T. (2020, Sept). Ice Cream Dataset. Kaggle. Retrieved March 11, 2024, from https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data
 
 
 # References

@@ -790,6 +790,7 @@ multi_word_ingredients <- c("coconut oil", "maltitol syrup", "soybean oil", "dut
 ```
 
 ```{r results='markup'}
+
 preprocess_text <- function(text) {
   text <- tolower(text)
   
@@ -807,6 +808,7 @@ preprocess_text <- function(text) {
 }
 
 bar_ingredients <- subset(products, Brand == "breyers" & IS_BAR == 1, select = c("Ingredients"))
+
 
 bar_ingredients$Ingredients <- lapply(bar_ingredients$Ingredients, preprocess_text)
 
