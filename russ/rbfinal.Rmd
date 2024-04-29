@@ -349,6 +349,23 @@ productreview_test <- (left_join(review_test,
 ```
 This operation creates a combined `products` and `reviews` dataframe with ingredient content for each review as well as microdata for the `review` `Stars` rating rather than `product`'s aggregate mean rating.
 
+```{r contingencyplot}
+
+brandrating_contingency_table<-table(reviews_bkp$Brand,reviews_bkp$Stars, dnn=c("Brand", "Star Rating"))
+
+brandrating_contingency_table<-table(reviews_bkp$Brand,reviews_bkp$Stars, dnn=c("Brand", "Star Rating"))
+
+
+brandrating_contingency_table
+prop.table(brandrating_contingency_table,margin=1)
+
+mosaicplot(brandrating_contingency_table)
+```
+
+Above is the contingency table for the brand product-reviews. We can see that the proportions are as described in the histogram, largely 5's for all brands. Interestingly, Breyer's appears to have a larger proportion of 1's than the other groups.
+
+
+
 ```{r helperfunctionfactominer}
 
 #Leave github issue here as a note: #factominer issue: https://github.com/husson/FactoMineR/issues/15
@@ -656,20 +673,7 @@ describe(products$Rating)
 ```
 Describing the overall data by using the the `describe()` function to highlight the ratings column.
 
-```{r contingencyplot}
 
-brandrating_contingency_table<-table(productreview$Brand,productreview$Stars, dnn=c("Brand", "Star Rating"))
-
-brandrating_contingency_table<-table(productreview$Brand,productreview$Stars, dnn=c("Brand", "Star Rating"))
-
-
-brandrating_contingency_table
-prop.table(brandrating_contingency_table,margin=1)
-
-mosaicplot(brandrating_contingency_table)
-```
-
-Above is the contingency table for the brand product-reviews. We can see that the proportions are as described in the histogram, largely 5's for all brands. Interestingly, Breyer's appears to have a larger proportion of 1's than the other groups.
 
 ### Breyers
 
