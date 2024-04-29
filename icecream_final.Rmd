@@ -1177,8 +1177,10 @@ Toledo, D. (2019, July 15). Cooking with machine learning: Dimension reduction. 
 
 CarbSmart. (N.d). Breyers. Retrieved April 15, 2024, from https://www.breyers.com/us/en/products/carbsmart.html
 
-#https://stackoverflow.com/questions/40795141/pca-for-categorical-features
-#https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/
-#https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100
-#http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/
+
+MCA Research
+https://stackoverflow.com/questions/40795141/pca-for-categorical-features
+https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/
+https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100
+http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/
 
