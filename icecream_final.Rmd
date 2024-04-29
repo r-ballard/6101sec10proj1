@@ -65,8 +65,8 @@ Our project uses an Ice Cream dataset that was retrieved from Kaggle from the fo
 
 #hardcoded for testing
 #setwd("C:/Users/russe/Documents/github/6101sec10proj1/")
-#projwd <- getwd()
-projwd <- "C:/Users/russe/Documents/github/6101sec10proj1"
+projwd <- getwd()
+#projwd <- "C:/Users/russe/Documents/github/6101sec10proj1"
 
 datadir <- "data"
 rawdir <- "raw"
@@ -1165,15 +1165,6 @@ Here are ingredients that were considered after analyzing the ingredients of the
 
 About Breyers History. (N.d.). Breyers. Retrieved March 12, 2024, from https://www.breyers.com/us/en/about.html
 
-CarbSmart. (N.d). Breyers. Retrieved April 15, 2024, from https://www.breyers.com/us/en/products/carbsmart.html
-
-Pond, T. (2020, Sept). Ice Cream Dataset. Kaggle. Retrieved March 11, 2024, from https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data
-
-
-# References
-
-About Breyers History. (N.d.). Breyers. Retrieved March 12, 2024, from https://www.breyers.com/us/en/about.html
-
 About Us. (N.d.). Häagen Dazs. Retrieved March 12, 2024, from https://www.icecream.com/us/en/brands/haagen-dazs/about
 
 Our Process. (N.d.). Talenti. Retrieved March 12, 2024, from https://www.talentigelato.com/us/en/our-process.html
@@ -1184,6 +1175,7 @@ Pond, T. (2020, Sept). Ice Cream Dataset. Kaggle. Retrieved March 11, 2024, from
 
 Toledo, D. (2019, July 15). Cooking with machine learning: Dimension reduction. Medium. https://towardsdatascience.com/cooking-recipes-with-pca-5c33a4acb7db 
 
+CarbSmart. (N.d). Breyers. Retrieved April 15, 2024, from https://www.breyers.com/us/en/products/carbsmart.html
 
 #https://stackoverflow.com/questions/40795141/pca-for-categorical-features
 #https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/
