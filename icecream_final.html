@@ -2612,6 +2612,24 @@ cream, Ben &amp; Jerry’s, Häagen-Dazs, Talenti, and Breyers. For the
 purposes of this project, we will be using a combined dataset provided
 by the author that combines all the products and reviews of all brands
 into their respective csv file.</p>
+<div id="data-load-and-preprocess" class="section level2">
+<h2>Data Load And Preprocess</h2>
+<pre class="r"><code>#hardcoded for testing
+#setwd(&quot;C:/Users/russe/Documents/github/6101sec10proj1/&quot;)
+projwd &lt;- getwd()
+#projwd &lt;- &quot;C:/Users/russe/Documents/github/6101sec10proj1&quot;
+
+datadir &lt;- &quot;data&quot;
+rawdir &lt;- &quot;raw&quot;
+#imgdir &lt;- &quot;img&quot;
+zipf &lt;- &quot;icecream.zip&quot;
+outf &lt;- &quot;icecream&quot;
+
+zippath &lt;- file.path(projwd, datadir, rawdir, zipf, fsep=&#39;/&#39;)
+outpath &lt;- file.path(projwd, datadir, rawdir, outf, fsep=&#39;/&#39;)
+#graphpath &lt;- file.path(projwd, datadir,imgdir, fsep=&quot;/&quot; )
+
+unzip(zippath, exdir=outpath)</code></pre>
 <p>The above chunk abstracts the filepath of the raw
 <code>icecream.zip</code> compressed directory to
 <code>data/raw/icecream.zip</code> within the working directory, which
@@ -2735,6 +2753,9 @@ Talenti are all owned by Uniever. Häagen-Dazs is owned by Froneri”
 (Pond, 2020). It is also important to note that, “Talenti is
 distinguished from the other brands as they produce gelato” (Pond,
 2020).</p>
+<p>We rename columns in the data for reader interpretability elsewhere.
+This can sometimes cause issues with joins or when attempting to
+reference raw data so caution must be used.</p>
 <pre class="r"><code>xkablesummary(products, title = &quot;Summary of the products dataset&quot;)</code></pre>
 <table class="table table-striped" style="width: auto !important; ">
 <caption>
@@ -3355,6 +3376,10 @@ reviews &lt;- reviews[reviews$Brand==&quot;breyers&quot;,]</code></pre>
 <code>Breyers</code>. This preprocessing step was elected to study the
 <code>Breyers</code> data more specifically for the application of MCA
 feature engineering and Linear Discriminant Analysis.</p>
+<p>##ML Train/Test Split In this section we parse the
+<code>reviews</code>, <code>products</code>, and joined
+<code>productreview</code> data into training and testing data for
+subsequent Multiple Correspondant and Linear Discriminant analyses.</p>
 <pre class="r"><code>product_sample &lt;- sample(2, nrow(products), replace=TRUE, prob=c(0.67, 0.33))
 
 
@@ -3630,6 +3655,7 @@ productreview &lt;- productreview_bkp</code></pre>
 <code>reviews</code>, <code>products</code>, and
 <code>productreview</code> data for exploratory analysis and linear
 modeling.</p>
+</div>
 </div>
 <div id="exploratory-data-analysis" class="section level1">
 <h1>Exploratory Data Analysis</h1>
@@ -4461,14 +4487,6 @@ be used, to make product taste up to their standards.</p>
 <h1>References</h1>
 <p>About Breyers History. (N.d.). Breyers. Retrieved March 12, 2024,
 from <a href="https://www.breyers.com/us/en/about.html" class="uri">https://www.breyers.com/us/en/about.html</a></p>
-<p>CarbSmart. (N.d). Breyers. Retrieved April 15, 2024, from <a href="https://www.breyers.com/us/en/products/carbsmart.html" class="uri">https://www.breyers.com/us/en/products/carbsmart.html</a></p>
-<p>Pond, T. (2020, Sept). Ice Cream Dataset. Kaggle. Retrieved March 11,
-2024, from <a href="https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data" class="uri">https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data</a></p>
-</div>
-<div id="references-1" class="section level1">
-<h1>References</h1>
-<p>About Breyers History. (N.d.). Breyers. Retrieved March 12, 2024,
-from <a href="https://www.breyers.com/us/en/about.html" class="uri">https://www.breyers.com/us/en/about.html</a></p>
 <p>About Us. (N.d.). Häagen Dazs. Retrieved March 12, 2024, from <a href="https://www.icecream.com/us/en/brands/haagen-dazs/about" class="uri">https://www.icecream.com/us/en/brands/haagen-dazs/about</a></p>
 <p>Our Process. (N.d.). Talenti. Retrieved March 12, 2024, from <a href="https://www.talentigelato.com/us/en/our-process.html" class="uri">https://www.talentigelato.com/us/en/our-process.html</a></p>
 <p>Our Values, Activism, and Mission. (N.d.). Ben &amp; Jerry’s.
@@ -4477,10 +4495,11 @@ Retrieved March 12, 2024, from <a href="https://www.benjerry.com/values" class="
 2024, from <a href="https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data" class="uri">https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data</a></p>
 <p>Toledo, D. (2019, July 15). Cooking with machine learning: Dimension
 reduction. Medium. <a href="https://towardsdatascience.com/cooking-recipes-with-pca-5c33a4acb7db" class="uri">https://towardsdatascience.com/cooking-recipes-with-pca-5c33a4acb7db</a></p>
-<p>#<a href="https://stackoverflow.com/questions/40795141/pca-for-categorical-features" class="uri">https://stackoverflow.com/questions/40795141/pca-for-categorical-features</a>
-#<a href="https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/" class="uri">https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/</a>
-#<a href="https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100" class="uri">https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100</a>
-#<a href="http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/" class="uri">http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/</a></p>
+<p>CarbSmart. (N.d). Breyers. Retrieved April 15, 2024, from <a href="https://www.breyers.com/us/en/products/carbsmart.html" class="uri">https://www.breyers.com/us/en/products/carbsmart.html</a></p>
+<p>MCA Research <a href="https://stackoverflow.com/questions/40795141/pca-for-categorical-features" class="uri">https://stackoverflow.com/questions/40795141/pca-for-categorical-features</a>
+<a href="https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/" class="uri">https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/</a>
+<a href="https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100" class="uri">https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100</a>
+<a href="http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/" class="uri">http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/</a></p>
 </div>
 
 

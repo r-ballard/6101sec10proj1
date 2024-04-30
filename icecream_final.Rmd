@@ -61,7 +61,9 @@ options(scientific=T, digits = 3)
 
 Our project uses an Ice Cream dataset that was retrieved from Kaggle from the following website: "https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data". The dataset contains a product and review datasets for 4 brands of ice cream, Ben & Jerry's, Häagen-Dazs, Talenti, and Breyers. For the purposes of this project, we will be using a combined dataset provided by the author that combines all the products and reviews of all brands into their respective csv file.
 
-```{r decompress_data, echo=FALSE}
+
+## Data Load And Preprocess
+```{r decompress_data}
 
 #hardcoded for testing
 #setwd("C:/Users/russe/Documents/github/6101sec10proj1/")
@@ -82,7 +84,7 @@ unzip(zippath, exdir=outpath)
 ```
 The above chunk abstracts the filepath of the raw `icecream.zip` compressed directory to `data/raw/icecream.zip` within the working directory, which is presumed to be the top level of the repo. The .zip is extracted
 
-```{r load colorbrew}
+```{r loadcolorbrew}
 brandcolorpath <- file.path(projwd, datadir, "processing/brandcolors.csv")
 brandcolordf <- data.frame(read.csv(brandcolorpath,
                            header=TRUE,
@@ -106,8 +108,6 @@ ingredientrenamedf <- data.frame(read.csv(ingredientpath,
 head(ingredientrenamedf)
 ```
 A metadata table containing ingredient mappings. This dataframe can be used in precleaning to  reduce the number of ingredients in the ingredients field and strips special characters.
-
-
 
 ```{r load_products}
 prodcombpath <- file.path(outpath, "combined/products.csv")
@@ -217,13 +217,13 @@ reviews <- reviews %>%
 
 reviews_bkp <- reviews
 ```
+We rename columns in the data for reader interpretability elsewhere. This can sometimes cause issues with joins or when attempting to reference raw data so caution must be used. 
 
 ```{r productandreviewsummary, results='markup'}
 xkablesummary(products, title = "Summary of the products dataset")
 xkablesummary(reviews, title = "Summary of the reviews dataset")
 ```
 Above we review summaries of the `products` and `reviews` datasets.
-
 
 ```{r productindicators}
 products$HAS_VANILLA <- as.factor(as.integer(grepl(pattern = "VANILLA", x = products$Ingredients)))
@@ -241,7 +241,6 @@ products$IS_BAR <- as.factor(as.integer(grepl(pattern = "\\bBAR\\b", x = product
 
 products_bkp <- products
 ```
-
 By using `grepl` we are able to create simple binary indicators for ingredient content in the icecream.
 
 ```{r ingredientparse}
@@ -265,14 +264,17 @@ products$Ingredients <- stri_replace_all_fixed(products$Ingredients,
 
 
 ```
-
 In this preprocessing step we convert the `products$ingredients` field from a single `character` entry into a vector of characters by treating commas in the `ingredients` field as a delimiter. We then use our `ingredientrenamedf` which contains string and string replacement values and was manually prepared by the data scientist to attempt to standardize the ingredient field in the `products$ingredients` field.
+
 ```{r breyerfilter}
 products <- products[products$Brand=="breyers",]
 reviews <- reviews[reviews$Brand=="breyers",]
 ```
-
 Here we subset the data to only include icecream of the brand `Breyers`. This preprocessing step was elected to study the `Breyers` data more specifically for the application of MCA feature engineering and Linear Discriminant Analysis.
+
+##Data Train/Test Split
+In this section we parse the `reviews`, `products`, and joined `productreview` data into training and testing data for subsequent Multiple Correspondant and Linear Discriminant analyses.
+
 ```{r productsplit}
 
 product_sample <- sample(2, nrow(products), replace=TRUE, prob=c(0.67, 0.33))
@@ -286,7 +288,6 @@ product_test <- products[product_sample==2, -which(names(products) %in% c("Ratin
 
 ```
 We split the `product` dataset into training and testing. This is perhaps a bit early, or we could otherwise leave the data combined and subset the data using the `product_sample` vector at a later time.
-
 
 ```{r reviewsplit}
 review_training.labels <- reviews[reviews$ProductID %in% product_training$ProductID,
@@ -302,7 +303,6 @@ review_test <- reviews[reviews$ProductID %in% product_test$ProductID,
 
 ```
 Similar to above, but for the `reviews` dataset.
-
 
 ```{r joinproductreview}
 
@@ -346,6 +346,9 @@ productreview_test <- (left_join(review_test,
 ```
 This operation creates a combined `products` and `reviews` dataframe with ingredient content for each review as well as microdata for the `review` `Stars` rating rather than `product`'s aggregate mean rating.
 
+### Multiple Correspondent Analysis
+In this section we conduct Multiple Correspondent Analysis on the Breyers icecream data, specifically engineering features from a one-hot encoded matrix of ingredient contents for the icecream. With review Star rating as the response variable. Here we attempt to answer our research question, "Can we identify ingredients which correlate with Ratings?"
+
 ```{r helperfunctionfactominer}
 
 #Leave github issue here as a note: #factominer issue: https://github.com/husson/FactoMineR/issues/15
@@ -369,7 +372,6 @@ return(base_char)
 
 ```
 There is a known issue with `FactoMineR` `predict.MCA()` function which causes it to create matrices which are not calcuable for cross-products. This presents an opportunity for contributing to the FactoMineR source, which the data scientist intends to do in the near future.
-
 
 ```{r ingredient_mca}
 
@@ -421,7 +423,6 @@ cumvar <- with(ingred_mca, eig[5,'cumulative percentage of variance'])
 
 fviz_screeplot(ingred_mca, addlabels = TRUE)
 ```
-
 Here we fit an MCA model to the `products` dataset. **M**ultiple **C**orrespondence **A**nalysis is a feature engineering methodology for extracting eigenvectors from a matrix of row-factor levels rather than numeric values as is the case with PCA. This method is ideal for distilling features in the one-hot encoded `ingredient` `products` data. We see reviewing the scree plot that the first `5` eigen-values encode `r cumvar` percent of the variance in the training data. This allows us to drastically reduce the complexity of our `LDA` model in the next section.
 
 ```{r LDA_training, results='markup' }
@@ -520,7 +521,7 @@ With the mixed model MCA-LDA complete we load clean backups to the `reviews`, `p
 
 We will explore the Ice Cream dataset by creating graphs, performing tests, and finding the measures of central tendency and variation. First, we'll look at the overall dataset, and then the individual datasets of each of the four brands.
 
-```{r}
+```{r rating_freqplot}
 library(ggplot2)
 ggplot(data=products, aes(Rating)) +
   geom_histogram(col='blue', fill='lightblue', alpha=0.7) +
@@ -531,7 +532,7 @@ ggplot(data=products, aes(Rating)) +
 
 This histogram shows the overall ratings of all ice-cream products across all 4 brands of ice-cream. We can see that there is a high frequency of ratings within the 4 - 5 star range. Based on the histogram above, we can see a left skewed distribution. To further test the skewness, we will perform a QQ plot.
 
-```{r}
+```{r summarystats_prodrating}
 sd.ratings <- sd(products$Rating)
 mean.ratings <- mean(products$Rating)
 sd.ratings
@@ -540,7 +541,7 @@ mean.ratings
 
 The mean of the data above is `r mean.ratings` and the standard deviation is `r sd.ratings`
 
-```{r}
+```{r qqplot_prodrating}
 qqnorm(products$Rating, main="QQ plot of Product Ratings")
 qqline(products$Rating)
 ```
