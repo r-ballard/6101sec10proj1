@@ -354,6 +354,7 @@ In this section we conduct Multiple Correspondence Analysis on the Breyers icecr
 
 #Leave github issue here as a note: #factominer issue: https://github.com/husson/FactoMineR/issues/15
 #TODO: open PR re: fix matrix transpose issue in FactoMineR
+#https://stackoverflow.com/questions/40795141/pca-for-categorical-features
 
 add_names_to_values = function(x,colname){
 return(paste0(colname,"_",x))
@@ -1175,10 +1176,10 @@ Toledo, D. (2019, July 15). Cooking with machine learning: Dimension reduction. 
 
 CarbSmart. (N.d). Breyers. Retrieved April 15, 2024, from https://www.breyers.com/us/en/products/carbsmart.html
 
+Atkinson, W. (2023, April 28). Charting fields and spaces quantitatively: From multiple correspondence analysis to categorical principal components analysis - quality & quantity. SpringerLink. https://link.springer.com/article/10.1007/s11135-023-01669-w 
 
-MCA Research
-https://stackoverflow.com/questions/40795141/pca-for-categorical-features
-https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/
-https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100
-http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/
+Sanchez, G. (2012, October 13). 5 functions to do Multiple Correspondence Analysis in R. Visually Enforced. May 1, 2024, https://www.gastonsanchez.com/visually-enforced/how-to/2012/10/13/MCA-in-R/ 
 
+Khoong, W. H. (2023, June 15). Dimensionality Reduction Techniques For Categorical & Continuous Data. Medium. May 1, 2024, https://medium.com/codex/dimensionality-reduction-techniques-for-categorical-continuous-data-75d2bca53100
+
+kassambara. (2017, September 24). MCA - Multiple Correspondence Analysis in R: Essentials. May 1, 2024, http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/114-mca-multiple-correspondence-analysis-in-r-essentials/ 
