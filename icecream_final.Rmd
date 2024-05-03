@@ -581,7 +581,7 @@ Based on these results, this further proves that the data is left skewed since t
 
 With the combined dataset, we will calculate the range, mean deviation, standard deviation, and variance.
 
-```{r ratingvariatonmeasures echo=FALSE}
+```{r ratingvariatonmeasures, echo=FALSE}
 range.rating <- range(products$Rating)
 md.rating <- mean(abs(products$Rating - mean.rating))
 sd.rating <- sd(products$Rating)
@@ -728,7 +728,7 @@ Here we see that the average rating for the Breyers brand is the lowest among th
 
 Further statistical comparisons will be conducted to compare the four brands in order to gain information for further tests.
 
-```{r brandratingboxplot results='markup'}
+```{r brandratingboxplot, results='markup'}
 ggplot(products, aes(x=Brand, y=Rating)) +
   geom_boxplot() +
   labs(title = "Distribution of Ratings Across Brands")
@@ -736,7 +736,7 @@ ggplot(products, aes(x=Brand, y=Rating)) +
 
 With the box plot above, we see the distribution of the ratings across the four brands ice cream. We see that the first and third quartiles and the median for Ben and Jerry's, Häagen-Dazs, and Talenti all fall above the rating of 4 mark. Breyer's first quartile falls below the rating of 4 line. Overall, we see that the Breyer's data performs the worse compared to the other brands. 
 
-```{r ratingbranddensity results='markup'}
+```{r ratingbranddensity, results='markup'}
 ggplot(products, aes(x=Rating, fill=Brand)) +
   geom_density(alpha=0.5) +
   labs(title = "Density of Ratings Across Brands")
@@ -799,7 +799,7 @@ summary(lm_model)
 
 Above we see how the linear regression model is structured.
 
-```{r results='markup'}
+```{r subset-ratingingredients, results='markup'}
 subset_data <- subset(products, Brand %in% c("bj", "hd", "talenti", "breyers") & Rating == 5)
 
 ingredient_categories <- subset_data[, c("Brand", "ProductName", "Rating",  "HAS_CARAMEL", "HAS_CHOCOLATE", "HAS_FRUIT", "HAS_VANILLA", "HAS_ORGANIC", "IS_BAR")]
@@ -811,7 +811,7 @@ product_ingredients
 
 Based on the table above, we see the products across all 4 brands that have an average rating of 5 with the ingredient categories that each have.
 
-We see that there are no products across all 4 brands that have organic ingredients or is a bar. 1 product that has caramel and 1 product that has fruit. Then many products that have Chocolate and Vanilla.
+We see that there are no products across all 4 brands that have organic ingredients. 2 products that are a bar, 1 product that has caramel, and 1 product that has fruit. Then many products that have Chocolate and Vanilla.
 
 We will now predict the ratings of ice cream products that contains a different combination of ingredient categories to see which would result in a high rating.
 
@@ -824,7 +824,7 @@ The different ingredient categories are as follows:
 * Has Organic Ingredients
 * Is a Bar
 
-```{r results='markup'}
+```{r pred-choco, results='markup'}
 new_data <- data.frame(
   Brand = "breyers",
   Name = "Chocolate",
@@ -849,7 +849,7 @@ predicted_ratings
 
 If Breyers were to introduce a product that contains a chocolate ingredient by itself, the predicted rating for it would be `r predicted_ratings`. We see that having a product that contains chocolate is a good indicator for a good rating.
 
-```{r results='markup'}
+```{r pred-van, results='markup'}
 new_data <- data.frame(
   Brand = "breyers",
   Name = "Vanilla",
@@ -874,7 +874,7 @@ predicted_ratings
 
 On the other hand, if Breyers were to introduce a new product that contains a vanilla ingredient by itself, the predicted rating for it would be `r predicted_ratings`. Comparing vanilla against chocolate, we see that vanilla performs the poorly in terms of predicted ratings.
 
-```{r results='markup'}
+```{r pred-chocovan, results='markup'}
 new_data <- data.frame(
   Brand = "breyers",
   Name = "Chocolate/Vanilla",
@@ -899,7 +899,7 @@ predicted_ratings
 
 If Breyers were to include both chocolate and vanilla ingredients into a new product, then the predicted rating would be `r predicted_ratings`. The result is not as good for ratings.
 
-```{r results='markup'}
+```{r pred-chococara, results='markup'}
 new_data <- data.frame(
   Brand = "breyers",
   Name = "Chocolate with Caramel",
@@ -924,7 +924,7 @@ predicted_ratings
 
 If Breyers were to introduce a new product that contains caramel and chocolate, then the predicted rating would be `r predicted_ratings`. 
 
-```{r results='markup'}
+```{r pred-chocoorg, results='markup'}
 new_data <- data.frame(
   Brand = "breyers",
   Name = "Organic Chocolate",
@@ -949,10 +949,10 @@ predicted_ratings
 
 If Breyers were to introduce a new product that contains chocolate and organic ingredients, then the predicted rating would be `r predicted_ratings`.
 
-```{r results='markup'}
+```{r pred-highrated, results='markup'}
 new_data <- data.frame(
   Brand = "breyers",
-  Name = "Chocolate/Vanilla",
+  Name = "Organic Bar with Chocolate and Fruit",
   HAS_CARAMEL = 0,
   HAS_CHOCOLATE = 1,
   HAS_FRUIT = 1,
@@ -1045,7 +1045,7 @@ The bars that Breyers currently offer is their CarbSmart products. According to 
 
 ## Introduction of a New Product: Ice Cream Bars
 
-```{r results='markup'}
+```{r breyer-chocosubset, results='markup'}
 highrated_choco_breyers <- subset(products, Brand == "breyers" & Rating >= 4.5 & HAS_CHOCOLATE == 1, select = c(ProductName, Rating))
 
 highrated_choco_breyers
@@ -1053,7 +1053,7 @@ highrated_choco_breyers
 
 Bringing up the products that Breyers makes that has chocolate and is rated 4.5, we see the list above.
 
-```{r results='markup'}
+```{r breyer-fruitsubset, results='markup'}
 highrated_fruit_breyers <- subset(products, Brand == "breyers" & Rating >= 4.5 & HAS_FRUIT == 1, select = c(ProductName, Rating))
 
 highrated_fruit_breyers
@@ -1061,7 +1061,7 @@ highrated_fruit_breyers
 
 For Breyers products that contain fruit ingredients that have a rating of 4.5 and above, only one product comes up, Raspberry Cheesecake Gelato Indulgences.
 
-```{r highrated, results='markup'}
+```{r organic-subset, results='markup'}
 highrated_organic <- subset(products, Rating >= 4.0 & HAS_ORGANIC == 1, select = c(ProductName, Rating))
 
 highrated_organic
@@ -1131,7 +1131,7 @@ ggplot(ingredient_freq_df, aes(x = reorder(ingredient, -frequency), y = frequenc
 
 We see the frequencies of each ingredient from Breyers' bar products. We will take this into consideration when deciding what ingredients to consider for the new product.
 
-```{r productsofinterest results='markup'}
+```{r productsofinterest, results='markup'}
 product_ids <- c("3_breyers", "27_breyers", "28_talenti")
 product_subset <- subset(products, ProductID %in% product_ids, select = c("ProductName", "Ingredients"))
 
@@ -1163,12 +1163,6 @@ Here are ingredients that were considered after analyzing the ingredients of the
 # References
 
 About Breyers History. (N.d.). Breyers. Retrieved March 12, 2024, from https://www.breyers.com/us/en/about.html
-
-About Us. (N.d.). Häagen Dazs. Retrieved March 12, 2024, from https://www.icecream.com/us/en/brands/haagen-dazs/about
-
-Our Process. (N.d.). Talenti. Retrieved March 12, 2024, from https://www.talentigelato.com/us/en/our-process.html
-
-Our Values, Activism, and Mission. (N.d.). Ben & Jerry's. Retrieved March 12, 2024, from https://www.benjerry.com/values
 
 Pond, T. (2020, Sept). Ice Cream Dataset. Kaggle. Retrieved March 11, 2024, from https://www.kaggle.com/datasets/tysonpo/ice-cream-dataset/data
 
